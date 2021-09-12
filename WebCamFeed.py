@@ -69,11 +69,11 @@ class WebCamFeed:
                 self.mask = None
 
     def prompt_crop(self):
-        # While the current frame isn't None -> Then wait an additional 3 seconds (make sure loaded)
+        # While the current frame isn't None -> Then wait an additional 0.3 seconds (make sure loaded)
         while True:
             if self.current_frame.all() is not None:
                 break
-        time.sleep(3)
+        time.sleep(0.3)
 
         # Function linked to left click on frame
         def lc_callback(event, x, y, flags, param):
