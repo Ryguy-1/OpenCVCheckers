@@ -16,17 +16,17 @@ class BoardViewer:
         # -> updated every frame (consistent though)
         self.board_representation = [] # [32] array with a 'c' for capital present and a 'l' for lower case present
         # Number for adaptive thresholding
-        self.adaptive_threshold_num = 111
+        self.adaptive_threshold_num = 31  # was 111  ------>> VARIABLE 1
         # Reset Switch
         self.adaptive_threshold_num_start = self.adaptive_threshold_num
         # Minimum Area Considered as Piece
-        self.contour_area_cutoff_min = 70 * math.pi
+        self.contour_area_cutoff_min = 900  # --------->> VARIABLE 2
         # Maimum Area Considered as Piece
-        self.contour_area_cutoff_max = 1400
+        self.contour_area_cutoff_max = 1400  # ---------->> Maybe_VARIABLE 3
         # Difference in Mean of HSV Values Considered 1 Color
         self.color_distinguish_threshold = 25
         # HSV Separator -> Change Accordingly
-        self.hsv_1 = 130
+        self.hsv_1 = 180  # --------->> Maybe_VARIABLE 4
         # Gaussian Blur Number
         self.gaussian_blur = (13, 13)
         # Canny Edge Detection Lower, Upper
@@ -38,7 +38,7 @@ class BoardViewer:
         # Thread which takes info from the webcam feed and constantly updates contour and board information
         self.analyze_thread = threading.Thread(target=self.analyze_board).start()
         # Allows Changing Adaptive Threshold number from Command Prompt -> Not used in final version (testing)
-        # self.threshold_resizer = threading.Thread(target=self.threshold_resizer).start()
+        self.threshold_resizer = threading.Thread(target=self.threshold_resizer).start()
 
     def analyze_board(self):
         # While webcam still running, analyze frames and update the internal mappings
@@ -157,8 +157,8 @@ class BoardViewer:
             else:  # Other color
                 new_list[1].append(piece_contour_list[i])
         # Say How Many Pieces Each Side Has on the Board
-        # print(f'Color 1 Has {len(np.array(new_list)[0])//2} pieces')
-        # print(f'Color 2 Has {len(np.array(new_list)[1])//2} pieces')
+        print(f'Color 1 Has {len(np.array(new_list)[0])//2} pieces')
+        print(f'Color 2 Has {len(np.array(new_list)[1])//2} pieces')
         # Set Member Variable equal to New Distribution
         self.contour_list = new_list.copy()
 
