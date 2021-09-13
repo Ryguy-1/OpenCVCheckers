@@ -16,7 +16,7 @@ class BoardViewer:
         # -> updated every frame (consistent though)
         self.board_representation = [] # [32] array with a 'c' for capital present and a 'l' for lower case present
         # Number for adaptive thresholding
-        self.adaptive_threshold_num = 110  # was 111  ------>> VARIABLE 1 -> Has Slider :)
+        self.adaptive_threshold_num = 41  # was 111  ------>> VARIABLE 1 -> Has Slider :)
         # Reset Switch
         self.adaptive_threshold_num_start = self.adaptive_threshold_num
         # Minimum Area Considered as Piece
@@ -34,7 +34,10 @@ class BoardViewer:
         # Frame Delay (Must be >= 16)
         self.frame_delay = 16; self.frame_counter = 0
         # Row/Column Threshold
-        self.row_col_threshold = 20
+        self.row_col_threshold = 40
+        # Hold Rank and File Location Information
+        self.ranks_x = []
+        self.files_y = []
         # Thread which takes info from the webcam feed and constantly updates contour and board information
         self.analyze_thread = threading.Thread(target=self.analyze_board).start()
         # Allows Changing Adaptive Threshold number from Command Prompt -> Not used in final version (testing)
@@ -58,6 +61,9 @@ class BoardViewer:
 
     def frame_delay_adjust(self, val):
         self.frame_delay = val
+
+    def row_col_threshold_adjust(self, val):
+        self.row_col_threshold = val
 
     def analyze_board(self):
         is_first_show = True  # Use For Initialization of Sliders
@@ -100,6 +106,7 @@ class BoardViewer:
                 cv2.drawContours(outline_image, filtered_contours, -1, (0, 255, 0),
                                  1)  # -1 = draw all contours -> otherwise, it's the index
 
+                outline_image = self.draw_x_y_lines(self.ranks_x, self.files_y, outline_image)
                 # Show the image
                 cv2.imshow(self.webcam_feed.frame_title, outline_image)
                 if is_first_show:
@@ -113,7 +120,11 @@ class BoardViewer:
                                        self.hsv_color_separator)
                     cv2.createTrackbar('Frame Delay', self.webcam_feed.frame_title, self.frame_delay, 300,
                                        self.frame_delay_adjust)
+                    # cv2.createTrackbar('Row/Col Threshold', self.webcam_feed.frame_title, self.row_col_threshold, 300,
+                    #                    self.row_col_threshold_adjust)
+                    (self.ranks_x, self.files_y) = self.get_x_y_lines()
                     is_first_show = False
+
                 # Wait 10 ms in between frames
                 cv2.waitKey(self.frame_delay)
                 print(f'Adaptive Threshold is {self.adaptive_threshold_num}')
@@ -232,15 +243,67 @@ class BoardViewer:
             x_centers_1.append(center_x)
             y_centers_1.append(center_y)
 
-        # Organize 0 color into 8 ranks -> x = rank
-
-        # for x_coord in x_centers_0:
-        #     pass
+        # DO BOARD REPRESENTATION HERE
 
 
+    def get_x_y_lines(self):
+        # since self.contour list can change, we make a copy at the beginning
+        local_contour_list = self.contour_list.copy()
+        # Get lists of x centers and y centers (parallel)
+        x_centers_0 = []; x_centers_1 = []
+        y_centers_0 = []; y_centers_1 = []
+        # Iterate through contours[0] and append centers to lists -> Also get rid of repeat contours (every other)
+        for i in range(0, len(local_contour_list[0]), 2):
+            # Get center
+            (center_x, center_y) = self.get_center_of_contour(local_contour_list[0][i])
+            # Append center
+            x_centers_0.append(center_x)
+            y_centers_0.append(center_y)
+        # Iterate through contours[1] and append centers to lists -> Also get rid of repeat contours (every other)
+        for i in range(0, len(local_contour_list[1]), 2):
+            # Get center
+            (center_x, center_y) = self.get_center_of_contour(local_contour_list[1][i])
+            # Append center
+            x_centers_1.append(center_x)
+            y_centers_1.append(center_y)
+
+        # To Calculate File, Use Both the Starting Y coords for both colors
+        combined_y_coords = []
+        for coord in y_centers_0:
+            combined_y_coords.append(coord)
+        for coord in y_centers_1:
+            combined_y_coords.append(coord)
+
+        # Calculate Files Using combined y coords -> file = y, rank = x
+        files_y = []  # array of y coords for each rank
+        # Iterate over all y coordinates of the pieces
+        for y_coord in combined_y_coords:
+            # Iterate over rank y coords already found
+            found_matching_rank = False
+            for found_rank_idx in range(len(files_y)):
+                # If the difference between this specific y coord and any rank is found, it's not new
+                if abs(y_coord-files_y[found_rank_idx]) < self.row_col_threshold:
+                    # Found matching rank already
+                    found_matching_rank = True
+                    # Break loop ranks
+                    break
+            # If rank wasn't found after search, it's unique
+            if not found_matching_rank:
+                # Append this new rank
+                files_y.append(y_coord)
+
+        # Calculate Ranks Using x_centers_0 and interpolation -> rank = x, file = y -> NEED TO DO
+        ranks_x = []
+
+        return ranks_x, files_y
+
+    def draw_x_y_lines(self, ranks_x, files_y, image):
+        for file_coord in files_y:
+            cv2.line(image, (0, file_coord), (image.shape[1], file_coord), color=(255, 0, 255), thickness=1)
+        return image
 
 
-        # quit()
+
 
 
 
