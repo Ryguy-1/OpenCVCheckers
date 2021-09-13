@@ -16,17 +16,17 @@ class BoardViewer:
         # -> updated every frame (consistent though)
         self.board_representation = [] # [32] array with a 'c' for capital present and a 'l' for lower case present
         # Number for adaptive thresholding
-        self.adaptive_threshold_num = 31  # was 111  ------>> VARIABLE 1
+        self.adaptive_threshold_num = 110  # was 111  ------>> VARIABLE 1 -> Has Slider :)
         # Reset Switch
         self.adaptive_threshold_num_start = self.adaptive_threshold_num
         # Minimum Area Considered as Piece
-        self.contour_area_cutoff_min = 900  # --------->> VARIABLE 2
+        self.contour_area_cutoff_min = 663  # --------->> VARIABLE 2 -> Has Slider :)
         # Maimum Area Considered as Piece
-        self.contour_area_cutoff_max = 1400  # ---------->> Maybe_VARIABLE 3
+        self.contour_area_cutoff_max = 1011  # ---------->> Maybe_VARIABLE 3 -> Has Slider :)
         # Difference in Mean of HSV Values Considered 1 Color
         self.color_distinguish_threshold = 25
         # HSV Separator -> Change Accordingly
-        self.hsv_1 = 180  # --------->> Maybe_VARIABLE 4
+        self.hsv_1 = 74  # --------->> Maybe_VARIABLE 4 -> Has Slider :)
         # Gaussian Blur Number
         self.gaussian_blur = (13, 13)
         # Canny Edge Detection Lower, Upper
@@ -38,9 +38,29 @@ class BoardViewer:
         # Thread which takes info from the webcam feed and constantly updates contour and board information
         self.analyze_thread = threading.Thread(target=self.analyze_board).start()
         # Allows Changing Adaptive Threshold number from Command Prompt -> Not used in final version (testing)
-        self.threshold_resizer = threading.Thread(target=self.threshold_resizer).start()
+        # self.threshold_resizer = threading.Thread(target=self.threshold_resizer).start()
+
+    def adaptive_threshold_change(self, val):
+        if val % 2 == 0:
+            val += 1
+            self.adaptive_threshold_num = val
+            return
+        self.adaptive_threshold_num = val
+
+    def contour_area_cutoff_min_change(self, val):
+        self.contour_area_cutoff_min = val
+
+    def contour_area_cutoff_max_change(self, val):
+        self.contour_area_cutoff_max = val
+
+    def hsv_color_separator(self, val):
+        self.hsv_1 = val
+
+    def frame_delay_adjust(self, val):
+        self.frame_delay = val
 
     def analyze_board(self):
+        is_first_show = True  # Use For Initialization of Sliders
         # While webcam still running, analyze frames and update the internal mappings
         while self.webcam_feed.is_running:
             # If the current frame isn't empty (on initialization)
@@ -79,11 +99,24 @@ class BoardViewer:
                 # Draw contours into image
                 cv2.drawContours(outline_image, filtered_contours, -1, (0, 255, 0),
                                  1)  # -1 = draw all contours -> otherwise, it's the index
+
                 # Show the image
                 cv2.imshow(self.webcam_feed.frame_title, outline_image)
-
+                if is_first_show:
+                    cv2.createTrackbar('Adaptive Threshold', self.webcam_feed.frame_title, self.adaptive_threshold_num, 400,
+                                       self.adaptive_threshold_change)
+                    cv2.createTrackbar('Contour Area Cutoff Min', self.webcam_feed.frame_title, self.contour_area_cutoff_min, 1500,
+                                       self.contour_area_cutoff_min_change)
+                    cv2.createTrackbar('Contour Area Cutoff Max', self.webcam_feed.frame_title, self.contour_area_cutoff_max, 2000,
+                                       self.contour_area_cutoff_max_change)
+                    cv2.createTrackbar('HSV Color Separator', self.webcam_feed.frame_title, self.hsv_1, 300,
+                                       self.hsv_color_separator)
+                    cv2.createTrackbar('Frame Delay', self.webcam_feed.frame_title, self.frame_delay, 300,
+                                       self.frame_delay_adjust)
+                    is_first_show = False
                 # Wait 10 ms in between frames
                 cv2.waitKey(self.frame_delay)
+                print(f'Adaptive Threshold is {self.adaptive_threshold_num}')
 
     # Filter Contours by Area (Closed Mandatory)
     def filter_contours(self, contours, hierarchy):
