@@ -146,7 +146,7 @@ class BoardViewer:
                 # Wait 10 ms in between frames
                 cv2.waitKey(self.frame_delay)
                 self.frame_counter += 1
-                print(f'Adaptive Threshold is {self.adaptive_threshold_num}')
+                # print(f'Adaptive Threshold is {self.adaptive_threshold_num}')
 
     # Filter Contours by Area (Closed Mandatory)
     def filter_contours(self, contours, hierarchy):
@@ -212,8 +212,8 @@ class BoardViewer:
             else:  # Other color
                 new_list[1].append(piece_contour_list[i])
         # Say How Many Pieces Each Side Has on the Board
-        print(f'Color 1 Has {len(np.array(new_list)[0])//2} pieces')
-        print(f'Color 2 Has {len(np.array(new_list)[1])//2} pieces')
+        # print(f'Color 1 Has {len(np.array(new_list)[0])//2} pieces')
+        # print(f'Color 2 Has {len(np.array(new_list)[1])//2} pieces')
         # Set Member Variable equal to New Distribution
         self.contour_list = new_list.copy()
 
@@ -298,8 +298,8 @@ class BoardViewer:
                     file_num = file_idx
             player_1_rank_files.append((rank_num, file_num))
 
-        print(player_0_rank_files)
-        print(player_1_rank_files)
+        # print(player_0_rank_files)
+        # print(player_1_rank_files)
 
         # Reset Board Representation -> Make copy of original board representation so don't change it
         temp_representation = self.starting_board_representation.copy()
@@ -317,7 +317,7 @@ class BoardViewer:
                         temp_representation[row_idx][col_idx] = 'L'
 
         self.board_representation = temp_representation  # set board representation equal to this new board
-        self.print_board(self.board_representation)
+        # self.print_board(self.board_representation)
 
     def get_x_y_lines(self):
         # since self.contour list can change, we make a copy at the beginning
