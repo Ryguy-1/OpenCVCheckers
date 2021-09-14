@@ -1,9 +1,7 @@
-import time
 import numpy as np
 from WebCamFeed import WebCamFeed
 import cv2
 import threading
-import math
 
 
 # Gets Checker Pieces from Feed and Map Them to a board array. ANGLE FROM SIDE OF BOARD HARDCODED FOR NOW.
@@ -42,7 +40,7 @@ class BoardViewer:
         # Canny Edge Detection Lower, Upper
         self.canny_lower = 70; self.canny_upper = 90
         # Frame Delay (Must be >= 16)
-        self.frame_delay = 500; self.frame_counter = 0
+        self.frame_delay = 16; self.frame_counter = 0
         # Row/Column Threshold
         self.row_col_threshold = 40  # Variable 5 -> Has Slider :)
         # Hold Rank and File Location Information
