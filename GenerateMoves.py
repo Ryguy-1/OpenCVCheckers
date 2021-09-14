@@ -13,7 +13,9 @@ class GenerateMoves:
 
     # Represents the Left Column In Binary
     a_file = int("1000000010000000100000001000000010000000100000001000000010000000", 2)
+    b_file = int("0100000001000000010000000100000001000000010000000100000001000000", 2)
     # Represents the Right Column In Binary
+    g_file = int("0000001000000010000000100000001000000010000000100000001000000010", 2)
     h_file = int("0000000100000001000000010000000100000001000000010000000100000001", 2)
 
     def __init__(self):
@@ -47,18 +49,26 @@ class GenerateMoves:
         cap_bitboard = int(cap_string, 2)
         lc_bitboard = int(lc_string, 2)
 
+
         possible_moves = []
         if casing == 'C':
             # Get Diagonal Bitboard (Left)
             left_bitboard = ((cap_bitboard << 9) & ~self.h_file & ~cap_bitboard & ~lc_bitboard)
+            # Get Diagonal Bitboard (Left 2)
+            left_2_bitboard = ((cap_bitboard << 18) & ~self.g_file & ~self.h_file & ~cap_bitboard & ~lc_bitboard)
             # Get Diagonal Bitboard (Right)
             right_bitboard = ((cap_bitboard << 7) & ~self.a_file & ~cap_bitboard & ~lc_bitboard)
+            # Get Diagonal Bitboard (Right 2)
+            right_2_bitboard = ((cap_bitboard << 14) & ~self.a_file & ~self.b_file, ~cap_bitboard, ~lc_bitboard)
         else:  # casing == 'L':
             # Get Diagonal Bitboard (Left)
             left_bitboard = ((cap_bitboard >> 7) & ~self.h_file & ~cap_bitboard & ~lc_bitboard)
+            # Diagonal Bitboard (Left 2)
+            left_2_bitboard = ((cap_bitboard >> 14) & ~self.g_file & ~self.h_file & ~cap_bitboard & ~lc_bitboard)
             # Get Diagonal Bitboard (Right)
             right_bitboard = ((cap_bitboard >> 9) & ~self.a_file & ~cap_bitboard & ~lc_bitboard)
-
+            # Get Diagonal Bitboard (Left)
+            right_2_bitboard = ((cap_bitboard >> 18) & ~self.a_file & ~self.b_file & ~cap_bitboard & ~lc_bitboard)
 
 
     def print_bitboard(self, bitboard):
