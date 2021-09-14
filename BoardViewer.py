@@ -16,23 +16,23 @@ class BoardViewer:
         # -> updated every frame (consistent though)
         self.board_representation = [] # [32] array with a 'c' for capital present and a 'l' for lower case present
         # Number for adaptive thresholding
-        self.adaptive_threshold_num = 41  # was 111  ------>> VARIABLE 1 -> Has Slider :)
+        self.adaptive_threshold_num = 45  # was 111  ------>> VARIABLE 1 -> Has Slider :)
         # Reset Switch
         self.adaptive_threshold_num_start = self.adaptive_threshold_num
         # Minimum Area Considered as Piece
-        self.contour_area_cutoff_min = 663  # --------->> VARIABLE 2 -> Has Slider :)
+        self.contour_area_cutoff_min = 777  # --------->> VARIABLE 2 -> Has Slider :)
         # Maimum Area Considered as Piece
-        self.contour_area_cutoff_max = 1011  # ---------->> Maybe_VARIABLE 3 -> Has Slider :)
+        self.contour_area_cutoff_max = 1086  # ---------->> Maybe_VARIABLE 3 -> Has Slider :)
         # Difference in Mean of HSV Values Considered 1 Color
-        self.color_distinguish_threshold = 25
+        self.color_distinguish_threshold = 30
         # HSV Separator -> Change Accordingly
-        self.hsv_1 = 74  # --------->> Maybe_VARIABLE 4 -> Has Slider :)
+        self.hsv_1 = 142  # --------->> Maybe_VARIABLE 4 -> Has Slider :)
         # Gaussian Blur Number
         self.gaussian_blur = (13, 13)
         # Canny Edge Detection Lower, Upper
         self.canny_lower = 70; self.canny_upper = 90
         # Frame Delay (Must be >= 16)
-        self.frame_delay = 16; self.frame_counter = 0
+        self.frame_delay = 25; self.frame_counter = 0
         # Row/Column Threshold
         self.row_col_threshold = 40
         # Hold Rank and File Location Information
@@ -106,6 +106,7 @@ class BoardViewer:
                 cv2.drawContours(outline_image, filtered_contours, -1, (0, 255, 0),
                                  1)  # -1 = draw all contours -> otherwise, it's the index
 
+                # Draw Ranks and Files on Board
                 outline_image = self.draw_x_y_lines(self.ranks_x, self.files_y, outline_image)
                 # Show the image
                 cv2.imshow(self.webcam_feed.frame_title, outline_image)
@@ -122,6 +123,8 @@ class BoardViewer:
                                        self.frame_delay_adjust)
                     # cv2.createTrackbar('Row/Col Threshold', self.webcam_feed.frame_title, self.row_col_threshold, 300,
                     #                    self.row_col_threshold_adjust)
+
+                    # Calculate Rank And File Location
                     (self.ranks_x, self.files_y) = self.get_x_y_lines()
                     is_first_show = False
 
@@ -183,7 +186,7 @@ class BoardViewer:
             center_x, center_y = self.get_center_of_contour(contour)
             # Calculate a value based on hsv (like a mean) -> very good distinction between colors
             # (5 on each side of centroid is enough to get good mean)
-            hsv_mean_value = np.mean(np.array(image_hsv[center_y-5:center_y+5, center_x-5:center_x+5]))
+            hsv_mean_value = np.mean(np.array(image_hsv[center_y-10:center_y+10, center_x-10:center_x+10]))
             # Append teh hsv value to the hsv_values list
             hsv_values.append(hsv_mean_value)
 
