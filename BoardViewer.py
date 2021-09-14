@@ -83,8 +83,9 @@ class BoardViewer:
             if self.webcam_feed.current_frame.all() is not None:
                 # Grab current frame from WebCamFeed
                 image = self.webcam_feed.current_frame
-                # Black and white
-                grayscaled_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+                # Convert to HSV
+                _, _, grayscaled_image = cv2.split(cv2.cvtColor(image, cv2.COLOR_BGR2HSV))
+
                 # Threshold -> Adaptive Threshold useful to help mitigate shadow of camera overhead
                 try:
                     grayscaled_image = cv2.adaptiveThreshold(grayscaled_image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
@@ -407,15 +408,18 @@ class BoardViewer:
         averaged_ranks_x = np.sort(averaged_ranks_x)
         averaged_files_y = np.sort(averaged_files_y)
 
-        # (Y Files already filled in) --Fill in Middle 2 X Ranks (Interpolate)--(Inserting Rows Not Populated by Pieces)
-        # Get Distances between index 1 and 2 (left side middle difference)
-        difference_left = np.mean([abs(averaged_ranks_x[1]-averaged_ranks_x[2])])
-        # Get Distances between index 3 and 4 (right side middle difference)
-        difference_right = np.mean([abs(averaged_ranks_x[3]-averaged_ranks_x[4])])
-        # Insert a new index after the left three -> using the left difference
-        averaged_ranks_x = np.insert(averaged_ranks_x, 3, averaged_ranks_x[2]+difference_left)
-        # Insert a new index before the right three -> using the right difference
-        averaged_ranks_x = np.insert(averaged_ranks_x, 4, averaged_ranks_x[4]-difference_right)
+        try:
+            # (Y Files already filled in) --Fill in Middle 2 X Ranks (Interpolate)--(Inserting Rows Not Populated by Pieces)
+            # Get Distances between index 1 and 2 (left side middle difference)
+            difference_left = np.mean([abs(averaged_ranks_x[1]-averaged_ranks_x[2])])
+            # Get Distances between index 3 and 4 (right side middle difference)
+            difference_right = np.mean([abs(averaged_ranks_x[3]-averaged_ranks_x[4])])
+            # Insert a new index after the left three -> using the left difference
+            averaged_ranks_x = np.insert(averaged_ranks_x, 3, averaged_ranks_x[2]+difference_left)
+            # Insert a new index before the right three -> using the right difference
+            averaged_ranks_x = np.insert(averaged_ranks_x, 4, averaged_ranks_x[4]-difference_right)
+        except:
+            print("Please Use Reset Slider to Reset X, Y")
 
         return averaged_ranks_x, averaged_files_y
 
