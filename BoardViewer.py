@@ -14,7 +14,17 @@ class BoardViewer:
         self.webcam_feed = WebCamFeed(frame_width, frame_height)
         self.contour_list = [[], []]  # 2d list with capital pieces in one list and lower case in the other
         # -> updated every frame (consistent though)
-        self.board_representation = [] # [32] array with a 'c' for capital present and a 'l' for lower case present
+        # [] 8x8 with a 'c' for capital present and a 'l' for lower case present
+        self.starting_board_representation = np.array([['~', '~', '~', '~', '~', '~', '~', '~'],
+                                              ['~', '~', '~', '~', '~', '~', '~', '~'],
+                                              ['~', '~', '~', '~', '~', '~', '~', '~'],
+                                              ['~', '~', '~', '~', '~', '~', '~', '~'],
+                                              ['~', '~', '~', '~', '~', '~', '~', '~'],
+                                              ['~', '~', '~', '~', '~', '~', '~', '~'],
+                                              ['~', '~', '~', '~', '~', '~', '~', '~'],
+                                              ['~', '~', '~', '~', '~', '~', '~', '~'],
+                                              ])
+        self.board_representation = self.starting_board_representation.copy()
         # Number for adaptive thresholding
         self.adaptive_threshold_num = 45  # was 111  ------>> VARIABLE 1 -> Has Slider :)
         # Reset Switch
@@ -32,7 +42,7 @@ class BoardViewer:
         # Canny Edge Detection Lower, Upper
         self.canny_lower = 70; self.canny_upper = 90
         # Frame Delay (Must be >= 16)
-        self.frame_delay = 25; self.frame_counter = 0
+        self.frame_delay = 500; self.frame_counter = 0
         # Row/Column Threshold
         self.row_col_threshold = 40  # Variable 5 -> Has Slider :)
         # Hold Rank and File Location Information
@@ -63,6 +73,10 @@ class BoardViewer:
     def row_col_threshold_adjust(self, val):
         self.row_col_threshold = val
 
+    def reset_grid(self, val):
+        if val == 1:
+            (self.ranks_x, self.files_y) = self.get_x_y_lines()
+
     def analyze_board(self):
         is_first_show = True  # Use For Initialization of Sliders
         # While webcam still running, analyze frames and update the internal mappings
@@ -92,11 +106,12 @@ class BoardViewer:
                 filtered_contours, filtered_hierarchy = self.filter_contours(contours, hierarchy)
 
                 # Updates contour list -> once every 30 frames
-                if len(filtered_contours) > 0 and self.frame_counter % 10 == 0:
-                    self.update_contour_list(filtered_contours, image)
-                    image = self.draw_labels(self.contour_list, image)
-                    self.update_board_representation()
+                self.update_contour_list(filtered_contours, image)
+                image = self.draw_labels(self.contour_list, image)
+                self.update_board_representation()
+                if self.frame_counter % 100 == 0:
                     self.frame_counter = 0
+
 
                 # Make copy of image (destructive)
                 outline_image = image.copy()
@@ -104,30 +119,33 @@ class BoardViewer:
                 cv2.drawContours(outline_image, filtered_contours, -1, (0, 255, 0),
                                  1)  # -1 = draw all contours -> otherwise, it's the index
 
-                # Calculate Rank And File Location
-                (self.ranks_x, self.files_y) = self.get_x_y_lines()
                 # Draw Ranks and Files on Board
                 outline_image = self.draw_x_y_lines(self.ranks_x, self.files_y, outline_image)
                 # Show the image
                 cv2.imshow(self.webcam_feed.frame_title, outline_image)
                 if is_first_show:
-                    cv2.createTrackbar('Adaptive Threshold', self.webcam_feed.frame_title, self.adaptive_threshold_num, 400,
+                    cv2.createTrackbar('Thresh', self.webcam_feed.frame_title, self.adaptive_threshold_num, 400,
                                        self.adaptive_threshold_change)
-                    cv2.createTrackbar('Contour Area Cutoff Min', self.webcam_feed.frame_title, self.contour_area_cutoff_min, 1500,
+                    cv2.createTrackbar('Min Area', self.webcam_feed.frame_title, self.contour_area_cutoff_min, 1500,
                                        self.contour_area_cutoff_min_change)
-                    cv2.createTrackbar('Contour Area Cutoff Max', self.webcam_feed.frame_title, self.contour_area_cutoff_max, 2000,
+                    cv2.createTrackbar('Max Area', self.webcam_feed.frame_title, self.contour_area_cutoff_max, 2000,
                                        self.contour_area_cutoff_max_change)
-                    cv2.createTrackbar('HSV Color Separator', self.webcam_feed.frame_title, self.hsv_1, 300,
+                    cv2.createTrackbar('Color', self.webcam_feed.frame_title, self.hsv_1, 300,
                                        self.hsv_color_separator)
                     # cv2.createTrackbar('Frame Delay', self.webcam_feed.frame_title, self.frame_delay, 300,
                     #                    self.frame_delay_adjust)
-                    cv2.createTrackbar('Row/Col Threshold', self.webcam_feed.frame_title, self.row_col_threshold, 300,
-                                       self.row_col_threshold_adjust)
-
+                    # cv2.createTrackbar('Grid Thrsh', self.webcam_feed.frame_title, self.row_col_threshold, 300,
+                    #                    self.row_col_threshold_adjust)
+                    cv2.createTrackbar('Reset Grid', self.webcam_feed.frame_title, 0, 1,
+                                       self.reset_grid)
+                    # Calculate Rank And File Location -> Does so at the beginning of the game using
+                    # A known orientation of the pieces
+                    (self.ranks_x, self.files_y) = self.get_x_y_lines()
                     is_first_show = False
 
                 # Wait 10 ms in between frames
                 cv2.waitKey(self.frame_delay)
+                self.frame_counter += 1
                 print(f'Adaptive Threshold is {self.adaptive_threshold_num}')
 
     # Filter Contours by Area (Closed Mandatory)
@@ -236,9 +254,70 @@ class BoardViewer:
             x_centers_1.append(center_x)
             y_centers_1.append(center_y)
 
-        # DO BOARD REPRESENTATION HERE
+        # Uses the previously calculated x, y lines to figure out where each piece is
+        # based on whether it's within the threshold.
+        # (X Ranks and Y Files are already both sorted)
 
+        # Player 0 indices for coordinates
+        player_0_rank_files = []  # Array of tuples with rank and file (x, then y)
+        # Loop through their coordinates
+        for (x_coord, y_coord) in zip(x_centers_0, y_centers_0):
+            # Keep track of their rank and file numbers found
+            rank_num = 0; file_num = 0
+            # Loop through the rank coordinates
+            for rank_idx in range(len(self.ranks_x)):  # Same size, but for completeness
+                # If this x coord is on that rank
+                if abs(x_coord-self.ranks_x[rank_idx]) < self.row_col_threshold:
+                    # set the rank number to rank_idx
+                    rank_num = rank_idx
+            # Loop through file coordinates
+            for file_idx in range(len(self.files_y)):  # Same size, but for completeness
+                # If this y coord is on that rank
+                if abs(y_coord-self.files_y[file_idx]) < self.row_col_threshold:
+                    # set the file number to file_idx
+                    file_num = file_idx
+            player_0_rank_files.append((rank_num, file_num))
 
+        # Player 1 indices for coordinates
+        player_1_rank_files = []  # Array of tuples with rank and file (x, then y)
+        # Loop through their coordinates
+        for (x_coord, y_coord) in zip(x_centers_1, y_centers_1):
+            # Keep track of their rank and file numbers found
+            rank_num = 0; file_num = 0
+            # Loop through the rank coordinates
+            for rank_idx in range(len(self.ranks_x)):  # Same size, but for completeness
+                # If this x coord is on that rank
+                if abs(x_coord-self.ranks_x[rank_idx]) < self.row_col_threshold:
+                    # set the rank number to rank_idx
+                    rank_num = rank_idx
+            # Loop through file coordinates
+            for file_idx in range(len(self.files_y)):  # Same size, but for completeness
+                # If this y coord is on that rank
+                if abs(y_coord-self.files_y[file_idx]) < self.row_col_threshold:
+                    # set the file number to file_idx
+                    file_num = file_idx
+            player_1_rank_files.append((rank_num, file_num))
+
+        print(player_0_rank_files)
+        print(player_1_rank_files)
+
+        # Reset Board Representation -> Make copy of original board representation so don't change it
+        temp_representation = self.starting_board_representation.copy()
+        # Appending to this member variable:
+        # self.board_representation = []  # [] 8x8 with a 'c' for capital present and a 'l' for lower case present
+        for (x, y) in player_0_rank_files:
+            for row_idx in range(len(temp_representation)):
+                for col_idx in range(len(temp_representation[row_idx])):
+                    if x == row_idx and y == col_idx:
+                        temp_representation[row_idx][col_idx] = 'C'
+        for (x, y) in player_1_rank_files:
+            for row_idx in range(len(temp_representation)):
+                for col_idx in range(len(temp_representation[row_idx])):
+                    if x == row_idx and y == col_idx:
+                        temp_representation[row_idx][col_idx] = 'L'
+
+        self.board_representation = temp_representation  # set board representation equal to this new board
+        self.print_board(self.board_representation)
 
     def get_x_y_lines(self):
         # since self.contour list can change, we make a copy at the beginning
@@ -326,19 +405,30 @@ class BoardViewer:
         for rank in ranks_x:
             averaged_ranks_x.append(int(np.mean(rank)))
 
-        print(averaged_ranks_x)
-        print(averaged_files_y)
+        # Sort Each Rank
+        averaged_ranks_x = np.sort(averaged_ranks_x)
+        averaged_files_y = np.sort(averaged_files_y)
+
+        # (Y Files already filled in) --Fill in Middle 2 X Ranks (Interpolate)--(Inserting Rows Not Populated by Pieces)
+        # Get Distances between index 1 and 2 (left side middle difference)
+        difference_left = np.mean([abs(averaged_ranks_x[1]-averaged_ranks_x[2])])
+        # Get Distances between index 3 and 4 (right side middle difference)
+        difference_right = np.mean([abs(averaged_ranks_x[3]-averaged_ranks_x[4])])
+        # Insert a new index after the left three -> using the left difference
+        averaged_ranks_x = np.insert(averaged_ranks_x, 3, averaged_ranks_x[2]+difference_left)
+        # Insert a new index before the right three -> using the right difference
+        averaged_ranks_x = np.insert(averaged_ranks_x, 4, averaged_ranks_x[4]-difference_right)
 
         return averaged_ranks_x, averaged_files_y
 
     def draw_x_y_lines(self, ranks_x, files_y, image):
         # Draw Files
         for file_coord in files_y:
-            cv2.line(image, (0, file_coord), (image.shape[1], file_coord), color=(255, 0, 255), thickness=1)
+            cv2.line(image, (0, file_coord), (image.shape[1], file_coord), color=(255, 255, 255), thickness=1)
 
         # Draw Ranks
         for rank_coord in ranks_x:
-            cv2.line(image, (rank_coord, 0), (rank_coord, image.shape[0]), color=(255, 0, 255), thickness=1)
+            cv2.line(image, (rank_coord, 0), (rank_coord, image.shape[0]), color=(255, 255, 255), thickness=1)
 
         return image
 
@@ -400,3 +490,9 @@ class BoardViewer:
         #         new_hierarchy[0].append(hierarchy[0][i])
         # contours = new_contours.copy()  # Amend Contours List
         # hierarchy = new_hierarchy.copy()
+
+    def print_board(self, board):
+        for row_idx in range(len(board)):
+            for col_idx in range(len(board)):
+                print(board[row_idx][col_idx], end =" ")  # Print without new line at end
+            print()  # Print spacer line
