@@ -74,6 +74,7 @@ class GenerateMoves:
         start_pos = Position([cap_bitboard, lc_bitboard], casing)
         print(f'Eval: {start_pos.get_evaluation()}')
         print(self.get_move_list_algebraic(start_pos))
+        start_pos.make_move("f2g6")
 
     # Give it a position, and it returns all of the potential moves in algebraic notation for the side up
     # (side up encoded in the position object)
@@ -251,8 +252,55 @@ class Position:
         # Otherwise, return the point differential (cap = +, lc = -)
         return total_cap - total_lc
 
+    # Give it Algebraic Notation And Makes Move
+    def make_move(self, algebraic_move):
+        # Strings of moves separated
+        from_algebraic = algebraic_move[:2]
+        to_algebraic = algebraic_move[2:]
+
+        # Create Strings in bits
+        bitboard_string_from = ""
+        bitboard_string_to = ""
+        for row in self.move_generator.algebraic_notation:
+            for move in row:
+                if move == from_algebraic:
+                    bitboard_string_from += "1"
+                    bitboard_string_to += "0"
+                elif move == to_algebraic:
+                    bitboard_string_to += "1"
+                    bitboard_string_from += "0"
+                else:
+                    bitboard_string_from += "0"
+                    bitboard_string_to += "0"
+
+        # Bitboards for to and from
+        from_bitboard = int(bitboard_string_from, 2)
+        to_bitboard = int(bitboard_string_to, 2)
+
+        # Remove starting place and add in ending place
+        if self.to_move == "C":
+            self.current_board[0] = self.current_board[0] ^ from_bitboard
+            self.current_board[0] = self.current_board[0] | to_bitboard
+        else:  # self.to_move == "L"
+            self.current_board[1] = self.current_board[1] ^ from_bitboard
+            self.current_board[1] = self.current_board[1] | to_bitboard
+
+        # Skip Add Ins
+
+
+
+
+        self.move_generator.print_bitboard(self.current_board[0])
+        print()
+        print()
+        print()
+        self.move_generator.print_bitboard(self.current_board[1])
+
+
 
 class Minimax:
+
+    move_generator = GenerateMoves()
 
     # Values that won't be reached under current evaluation method
     max = 10000000
@@ -271,4 +319,6 @@ class Minimax:
             best_value = self.min
             least_moves = self.max
             best_position = None
-            # possible_moves =
+            possible_moves = self.move_generator.get_move_list_algebraic(pos)
+
+

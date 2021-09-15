@@ -1,5 +1,6 @@
 from BoardViewer import BoardViewer
 from GenerateMoves import GenerateMoves
+from GenerateMoves import Position
 import cv2
 import threading
 import numpy as np
@@ -20,7 +21,7 @@ def main():
                            ['C', '~', 'C', '~', 'C', '~', 'C', '~'],
                            ['~', 'C', '~', 'C', '~', 'C', '~', 'C'],
                            ])
-    move_generator.analyze_read_bord(test_array, 'L')
+    move_generator.analyze_read_bord(test_array, 'C')
 
 
 if __name__ == '__main__':
