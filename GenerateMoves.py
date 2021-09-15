@@ -22,7 +22,7 @@ class GenerateMoves:
             ["h2", "g2", "f2", "e2", "d2", "c2", "b2", "a2"],
             ["h1", "g1", "f1", "e1", "d1", "c1", "b1", "a1"]]
 
-    reference_bitboard_array = [] # Array of 64 bitboards, each one with a single 1 populated (left to right)
+    reference_bitboard_array = []  # Array of 64 bitboards, each one with a single 1 populated (left to right)
 
     # These are switched from the algebraic notation array, just because the array is mirrored (same idea though)
     # Represents the Left Column In Binary
@@ -74,7 +74,7 @@ class GenerateMoves:
         start_pos = Position([cap_bitboard, lc_bitboard], casing)
         print(f'Eval: {start_pos.get_evaluation()}')
         print(self.get_move_list_algebraic(start_pos))
-        start_pos.make_move("f2g6")
+        start_pos.make_move("")
 
     # Give it a position, and it returns all of the potential moves in algebraic notation for the side up
     # (side up encoded in the position object)
@@ -254,6 +254,10 @@ class Position:
 
     # Give it Algebraic Notation And Makes Move
     def make_move(self, algebraic_move):
+
+        if algebraic_move == "":
+            return
+
         # Strings of moves separated
         from_algebraic = algebraic_move[:2]
         to_algebraic = algebraic_move[2:]
@@ -281,19 +285,32 @@ class Position:
         if self.to_move == "C":
             self.current_board[0] = self.current_board[0] ^ from_bitboard
             self.current_board[0] = self.current_board[0] | to_bitboard
+            # Skip Add Ins
+            # If you are attacking on the left diagonal, remove the piece for lower case
+            # that is << 9 from the from bitboard. Also check if there is a piece to remove (and clause)
+            if to_bitboard == (from_bitboard << 18) and ((from_bitboard << 9) & self.current_board[1]) > 0:
+                self.current_board[1] = self.current_board[1] ^ (from_bitboard << 9)
+            elif to_bitboard == (from_bitboard << 14) and ((from_bitboard << 7) & self.current_board[1]) > 0:
+                self.current_board[1] = self.current_board[1] ^ (from_bitboard << 7)
+
         else:  # self.to_move == "L"
             self.current_board[1] = self.current_board[1] ^ from_bitboard
             self.current_board[1] = self.current_board[1] | to_bitboard
+            # Skip Add Ins
+            # If you are attacking on the left diagonal, remove the piece for capital
+            # that is >> 9/7 from the from bitboard. Also check if there is a piece to remove (and clause)
+            if to_bitboard == (from_bitboard >> 18) and ((from_bitboard >> 9) & self.current_board[0]) > 0:
+                self.current_board[0] = self.current_board[0] ^ (from_bitboard >> 9)
+            elif to_bitboard == (from_bitboard >> 14) and ((from_bitboard >> 7) & self.current_board[0]) > 0:
+                self.current_board[0] = self.current_board[0] ^ (from_bitboard >> 7)
 
-        # Skip Add Ins
 
-
-
-
+        print("CAPITAL")
         self.move_generator.print_bitboard(self.current_board[0])
         print()
         print()
         print()
+        print("LOWER CASE")
         self.move_generator.print_bitboard(self.current_board[1])
 
 
