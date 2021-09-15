@@ -1,5 +1,5 @@
 import numpy as np
-from Position import Position
+
 
 class GenerateMoves:
 
@@ -31,10 +31,10 @@ class GenerateMoves:
     # Represents the Right Column In Binary
     g_file = int("0000001000000010000000100000001000000010000000100000001000000010", 2)
     h_file = int("0000000100000001000000010000000100000001000000010000000100000001", 2)
+    # Length Compare (64 bits)
+    print(len("0000000000000000000000000000000000000000000000000000000000000000"))
 
     def __init__(self):
-        # Length Compare (64 bits)
-        print(len("0000000000000000000000000000000000000000000000000000000000000000"))
         if len(self.reference_bitboard_array) == 0:
             self.populate_reference_array()
         pass
@@ -71,14 +71,66 @@ class GenerateMoves:
         lc_bitboard = int(lc_string, 2)
 
         # Initialize Board StartPos
-        start_pos = Position([cap_bitboard, lc_bitboard], 'L')
+        start_pos = Position([cap_bitboard, lc_bitboard], casing)
+        print(f'Eval: {start_pos.get_evaluation()}')
+        print(self.get_move_list_algebraic(start_pos))
 
-        # Find Possible Moves
-        self.find_moves(start_pos)
+    # Give it a position, and it returns all of the potential moves in algebraic notation for the side up
+    # (side up encoded in the position object)
+    def get_move_list_algebraic(self, position):
+        if position.to_move == "C":
+            capital_bitboards = self.split_bitboard(position.current_board[0])
+            for bitboard_index in range(len(capital_bitboards)):
+                # Turns the 1d array into a 2d array, the second index being the place it can move to in bitboard
+                capital_bitboards[bitboard_index] = [capital_bitboards[bitboard_index]]
+                capital_bitboards[bitboard_index].append(self.find_moves(capital_bitboards[bitboard_index][0], position))
+
+            from_to_moves = []
+            # Gets the squares from and to in algebraic notation
+            for combo in capital_bitboards:
+                # Record the From Square Algebraically
+                from_square = self.get_algebraic_notation_from_single_bitboard(combo[0])
+                # Get Array of all All the Bitboard To Squares for Each From Square
+                to_square_bitboards = self.split_bitboard(combo[1])
+                # Record 2 squares algebraically as they are found
+                to_squares = []
+                # Iterate over the to bitboards
+                for i in range(len(to_square_bitboards)):
+                    # Append the algebraic notation as found
+                    to_squares.append(self.get_algebraic_notation_from_single_bitboard(to_square_bitboards[i]))
+                # Add to from_to_moves the sequence in full algebraic notation
+                for to_square in to_squares:
+                    from_to_moves.append(from_square + to_square)
+            return from_to_moves
+        else:  # position.to_move == "L":
+            lower_case_bitboards = self.split_bitboard(position.current_board[1])
+            for bitboard_index in range(len(lower_case_bitboards)):
+                # Turns the 1d array into a 2d array, the second index being the place it can move to in bitboard
+                lower_case_bitboards[bitboard_index] = [lower_case_bitboards[bitboard_index]]
+                lower_case_bitboards[bitboard_index].append(
+                    self.find_moves(lower_case_bitboards[bitboard_index][0], position))
+
+            from_to_moves = []
+            # Gets the squares from and to in algebraic notation
+            for combo in lower_case_bitboards:
+                # Record the From Square Algebraically
+                from_square = self.get_algebraic_notation_from_single_bitboard(combo[0])
+                # Get Array of all All the Bitboard To Squares for Each From Square
+                to_square_bitboards = self.split_bitboard(combo[1])
+                # Record 2 squares algebraically as they are found
+                to_squares = []
+                # Iterate over the to bitboards
+                for i in range(len(to_square_bitboards)):
+                    # Append the algebraic notation as found
+                    to_squares.append(self.get_algebraic_notation_from_single_bitboard(to_square_bitboards[i]))
+                # Add to from_to_moves the sequence in full algebraic notation
+                for to_square in to_squares:
+                    from_to_moves.append(from_square + to_square)
+            return from_to_moves
 
     # Put in a Position object, encoded in which is a string for who's to move, and it returns a bitboard of all
     # the squares that can be moved to
-    def find_moves(self, position):
+    def find_moves(self, this_piece, position):
         # Array to be returned of moves in a single bitboard
         possible_moves_return = []
 
@@ -87,9 +139,9 @@ class GenerateMoves:
 
         if position.to_move == 'C':
             # Get Diagonal Bitboard (Left)
-            left_bitboard = ((cap_bitboard << 9) & ~self.h_file & ~cap_bitboard)  # including lc pieces
+            left_bitboard = ((this_piece << 9) & ~self.h_file & ~cap_bitboard)  # including lc pieces
             # Get Diagonal Bitboard (Right)
-            right_bitboard = ((cap_bitboard << 7) & ~self.a_file & ~cap_bitboard)  # including lc pieces
+            right_bitboard = ((this_piece << 7) & ~self.a_file & ~cap_bitboard)  # including lc pieces
             # Combined Right and Left (Excluding LC Pieces from Calculation)
             move_without_skip_including_lc_pieces = left_bitboard | right_bitboard
             # Find the Potential Moves without skipping (1 move ahead) Now including LC Calculation
@@ -102,17 +154,17 @@ class GenerateMoves:
             # and ~self.g_file/~self.b_file for specific edge case
             lc_pieces_shifted_legal = (((lc_pieces_directly_ahead << 9) & ~self.h_file & ~cap_bitboard & ~lc_bitboard & ~self.g_file) |\
                                       ((lc_pieces_directly_ahead << 7) & ~self.a_file & ~cap_bitboard & ~lc_bitboard) & ~self.b_file) &\
-                            (((cap_bitboard << 18) & ~self.g_file & ~self.h_file & ~cap_bitboard & ~lc_bitboard) |
-                            ((cap_bitboard << 14) & ~self.a_file & ~self.b_file & ~cap_bitboard & ~lc_bitboard))
+                            (((this_piece << 18) & ~self.g_file & ~self.h_file & ~cap_bitboard & ~lc_bitboard) |
+                            ((this_piece << 14) & ~self.a_file & ~self.b_file & ~cap_bitboard & ~lc_bitboard))
             # Add together all moves without skips and skip moves into one
             all_moves = move_without_skip | lc_pieces_shifted_legal
             return all_moves
 
         else:  # casing == 'L':
             # Get Diagonal Bitboard (Left)
-            left_bitboard = ((lc_bitboard >> 9) & ~self.a_file & ~lc_bitboard)  # including cap pieces
+            left_bitboard = ((this_piece >> 9) & ~self.a_file & ~lc_bitboard)  # including cap pieces
             # Get Diagonal Bitboard (Right)
-            right_bitboard = ((lc_bitboard >> 7) & ~self.h_file & ~lc_bitboard)  # including cap pieces
+            right_bitboard = ((this_piece >> 7) & ~self.h_file & ~lc_bitboard)  # including cap pieces
             # Combined Right and Left (Excluding Cap Pieces from Calculation)
             move_without_skip_including_cap_pieces = left_bitboard | right_bitboard
             # Find the Potential Moves without skipping (1 move ahead) Now including Cap Calculation
@@ -125,12 +177,11 @@ class GenerateMoves:
             # and ~self.g_file/~self.b_file for specific edge case
             cap_pieces_shifted_legal = (((cap_pieces_directly_ahead >> 9) & ~self.a_file & ~lc_bitboard & ~cap_bitboard & ~self.b_file) |\
                                       ((cap_pieces_directly_ahead >> 7) & ~self.h_file & ~lc_bitboard & ~cap_bitboard) & ~self.g_file) &\
-                            (((lc_bitboard >> 18) & ~self.a_file & ~self.b_file & ~lc_bitboard & ~cap_bitboard) |
-                            ((lc_bitboard >> 14) & ~self.g_file & ~self.h_file & ~lc_bitboard & ~cap_bitboard))
+                            (((this_piece >> 18) & ~self.a_file & ~self.b_file & ~lc_bitboard & ~cap_bitboard) |
+                            ((this_piece >> 14) & ~self.g_file & ~self.h_file & ~lc_bitboard & ~cap_bitboard))
             # Add together all moves without skips and skip moves into one
             all_moves = move_without_skip | cap_pieces_shifted_legal
             return all_moves
-
 
     # Gets a reference array to assist in separating bits from the bitboard array of a position
     # Each index is bit shifted 1 to the right to create an array of 64 bitboards
@@ -154,7 +205,10 @@ class GenerateMoves:
     # Input: bitboard with a single 1 (single piece represented) and returns the string with algebraic notation
     def get_algebraic_notation_from_single_bitboard(self, bitboard):
         # Gets index of the bit from bitboard
-        index_of_bit = format(bitboard, '064b').index("1")
+        try:
+            index_of_bit = format(bitboard, '064b').index("1")
+        except:  # if no 1 is found
+            return ""
         # Going backwards in bitboard (top left to bottom right) (same orientation as algebraic notation array)
         counter = 0
         # Loop through algebraic notation
@@ -163,7 +217,6 @@ class GenerateMoves:
                 if counter == index_of_bit:
                     return square
                 counter += 1
-        return ""
 
     def print_bitboard(self, bitboard):
         string_bitboard = format(bitboard, '064b')
@@ -171,3 +224,51 @@ class GenerateMoves:
             if bit_idx % 8 == 0 and bit_idx != 0:
                 print()
             print(string_bitboard[bit_idx], end=' ')
+
+
+# Keeps track of board position
+class Position:
+
+    move_generator = GenerateMoves()
+
+    def __init__(self, bitboard, to_move):
+        self.current_board = bitboard
+        self.to_move = to_move
+
+    # For now just returns the sum of pieces
+    def get_evaluation(self):
+        # Gets the total amount of capital pieces in its bitboard
+        total_cap = len(self.move_generator.split_bitboard(self.current_board[0]))
+        # Gets the total amount of lower case pieces in its bitboard
+        total_lc = len(self.move_generator.split_bitboard((self.current_board[1])))
+
+        # Checks for game won and returns a value accordingly
+        if total_cap == 0:
+            return -10000000
+        elif total_lc == 0:
+            return 10000000
+
+        # Otherwise, return the point differential (cap = +, lc = -)
+        return total_cap - total_lc
+
+
+class Minimax:
+
+    # Values that won't be reached under current evaluation method
+    max = 10000000
+    min = -10000000
+
+    # Uses Alpha Beta Pruned Minimax Algorithm to find best move in a certain situation
+    # (isMaximizingPlayer from position!!)
+    def minimax(self, pos, depth, alpha, beta):
+
+        # Reached Leaf Node (Game is Over)
+        if depth == 0:
+            return pos
+
+        # If isMaximizingPlayer
+        if pos.to_move == "C":
+            best_value = self.min
+            least_moves = self.max
+            best_position = None
+            # possible_moves =
