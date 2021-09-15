@@ -142,6 +142,10 @@ class BoardViewer:
                     (self.ranks_x, self.files_y) = self.get_x_y_lines()
                     is_first_show = False
 
+                self.print_board(self.board_representation)
+                for i in range(5):
+                    print()
+
                 # Wait 10 ms in between frames
                 cv2.waitKey(self.frame_delay)
                 self.frame_counter += 1

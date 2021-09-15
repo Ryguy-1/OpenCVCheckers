@@ -6,18 +6,18 @@ import numpy as np
 
 
 def main():
-    board_viewer = BoardViewer()
-    # move_generator = GenerateMoves()
-    # test_array = np.array([['L', '~', 'L', '~', 'L', '~', 'L', '~'],
-    #                        ['~', 'L', '~', 'L', '~', 'L', '~', 'L'],
-    #                        ['L', '~', 'L', '~', 'L', '~', 'L', '~'],
-    #                        ['~', '~', '~', '~', '~', '~', '~', '~'],
-    #                        ['~', '~', '~', '~', '~', '~', '~', '~'],
-    #                        ['~', 'C', '~', 'C', '~', 'C', '~', 'C'],
-    #                        ['C', '~', 'C', '~', 'C', '~', 'C', '~'],
-    #                        ['~', 'C', '~', 'C', '~', 'C', '~', 'C'],
-    #                        ])
-    # move_generator.get_moves(test_array, 'C')
+    # board_viewer = BoardViewer()
+    move_generator = GenerateMoves()
+    test_array = np.array([['L', '~', 'L', '~', 'L', '~', 'L', '~'],
+                           ['~', 'L', '~', 'L', '~', 'L', '~', 'L'],
+                           ['L', '~', 'L', '~', 'L', '~', 'L', '~'],
+                           ['~', '~', '~', '~', '~', '~', '~', '~'],
+                           ['~', '~', '~', '~', '~', '~', '~', '~'],
+                           ['~', 'C', '~', 'C', '~', 'C', '~', 'C'],
+                           ['C', '~', 'C', '~', 'C', '~', 'C', '~'],
+                           ['~', 'C', '~', 'C', '~', 'C', '~', 'C'],
+                           ])
+    move_generator.analyze_read_bord(test_array, 'C')
 
 
 if __name__ == '__main__':
