@@ -142,31 +142,36 @@ class GenerateMoves:
     # Takes the output array from get_moves_skipping() and returns it in a nicer form for minimax to use
     def extract_array_format(self, array):
 
-        # Check if an object contains a list
-        def list_contains_array(array2):
-            if not isinstance(array2, list):
-                return False
-            for variable in array2:
-                if isinstance(variable, list):
-                    return True
-            return False
+        # # Check if an object contains a list
+        # def list_contains_array(array2):
+        #     if not isinstance(array2, list):
+        #         return False
+        #     for variable in array2:
+        #         if isinstance(variable, list):
+        #             return True
+        #     return False
         # Initialize returned array
         returned_array = []
 
-        # Recursively cycle through values
-        def value_cycle(arr):
-            for value in arr:
-                # if the object doesn't contain another list
-                if not list_contains_array(value):
-                    # If it is a string append it as a list
-                    if isinstance(value, str):
-                        returned_array.append([value])
-                    # Otherwise, append it as the list it is
-                    else:
-                        returned_array.append(value)
-                else:  # if it does contain another array, recursive call
-                    value_cycle(value)
-        value_cycle(array)
+        # # Recursively cycle through values
+        # def value_cycle(arr):
+        #     for value in arr:
+        #         # if the object doesn't contain another list
+        #         if not list_contains_array(value):
+        #             # If it is a string append it as a list
+        #             if isinstance(value, str):
+        #                 returned_array.append([value])
+        #             # Otherwise, append it as the list it is
+        #             else:
+        #                 returned_array.append(value)
+        #
+        #         elif not list_contains_array(value[:2]):
+        #             returned_array.append(value[:2])
+        #             if len(value) > 2:
+        #                 value_cycle(value[2:3])
+        #         else:
+        #             value_cycle(value)
+        # value_cycle(array)
         return returned_array
 
     # Recursive Function that finds all skip possibilities
