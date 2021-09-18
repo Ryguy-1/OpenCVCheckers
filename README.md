@@ -1,4 +1,4 @@
-# OpenCVCheckers
+# OpenCVCheckers 🎥🥇
 
 ## Rules:
 1. Set Pieces on Black Squares only (First Three Rows on Each Side)
