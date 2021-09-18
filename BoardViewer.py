@@ -438,65 +438,6 @@ class BoardViewer:
 
         return image
 
-
-
-
-
-
-
-
-
-
-
-        # # Approxamate the Shape of the Contour!! -> We want circles for now -> (contour, epsilon=distance it can be off from original shape, closed=True)
-        # new_contours = []
-        # for i in range(len(contours)):
-        #     approx = cv2.approxPolyDP(contours[i], 0.001 * cv2.arcLength(contours[i], True), True)
-        #     if len(approx) == 1:  # if it is a square
-        #         print("1")
-        #     elif len(approx) == 2:
-        #         print("2")
-        #     elif len(approx) == 3:
-        #         print("3")
-        #     elif len(approx) == 4:
-        #         print("4")
-        #     elif len(approx) == 5:
-        #         print("5")
-        #     else:
-        #         new_contours.append(contours[i])
-        # contours = new_contours.copy()
-
-        #####################################################
-
-        # # Filter out Innermost items (circles)
-        # new_contours = []
-        # new_hierarchy = [[]]
-        # number_in_hierarchy = 0
-        # for i in range(len(hierarchy[0])):
-        #     (next, previous, first_child, parent) = hierarchy[0][i]
-        #     if (first_child == -1) and (len(cv2.approxPolyDP(contours[i], 0.001 * cv2.arcLength(contours[i], True), True)) != 4):
-        #         number_in_hierarchy += 1
-        #         new_contours.append(contours[i])
-        #         new_hierarchy[0].append(hierarchy[0][i])
-        # contours = new_contours.copy()  # Amend Contours List
-        # hierarchy = new_hierarchy.copy()
-        # # print(number_in_hierarchy)
-
-        ################################################
-
-        # Filter Contours by Size (Filter out Small Ones) (CAMERA ABOUT 26 INCHES ABOVE BOARD) (assume parallel lists -> pretty sure for now)
-        # new_contours = []
-        # new_hierarchy = [[]]
-        # for i in range(len(contours)):
-        #     if cv2.arcLength(contours[i], False) > self.contour_perimeter_cutoff:
-        #         new_contours.append(contours[i])
-        #         new_hierarchy[0].append(hierarchy[0][i])
-        #     elif cv2.arcLength(contours[i], True) > self.contour_perimeter_cutoff:
-        #         new_contours.append(contours[i])
-        #         new_hierarchy[0].append(hierarchy[0][i])
-        # contours = new_contours.copy()  # Amend Contours List
-        # hierarchy = new_hierarchy.copy()
-
     def print_board(self, board):
         for row_idx in range(len(board)):
             for col_idx in range(len(board)):

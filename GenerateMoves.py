@@ -1,6 +1,12 @@
 import numpy as np
 
 
+# Assumptions / Rules:
+# - If a skip is longer than another skip, only consider the longer skip.
+# - If a skip is available, you have to take it (rule of the game)
+# - If there are two skips of equal length, only one is considered **
+
+
 # Takes a String Board (As received from the board viewer) and returns a list of good moves, in order from best
 # To Worst
 def analyze_read_bord(string_board, casing):
@@ -33,16 +39,29 @@ def analyze_read_bord(string_board, casing):
     print(f'Eval: {start_pos.get_evaluation()}')
     generate_moves = GenerateMoves()
     print(f"Return Value: {generate_moves.get_move_list_algebraic(start_pos)}")
-    print(f'Generate Moves Extracter: {generate_moves.extract_array_format(generate_moves.get_move_list_algebraic(start_pos))}')
-    # minimax = Minimax()
-    # moves_to_current = minimax.minimax(start_pos, 8, Minimax.min, Minimax.max).moves_to_current
-    # print(f'Nodes Searched = {minimax.nodes_searched}')
-    # for move in moves_to_current:
-    #     start_pos.make_move(move)
-    #     start_pos.draw()
-    #     print()
-    #     print()
-    #     print()
+    minimax = Minimax()
+    moves_to_current = minimax.minimax(start_pos, 8, Minimax.min, Minimax.max).moves_to_current
+    print(f'Nodes Searched = {minimax.nodes_searched}')
+    print(moves_to_current)
+    start_pos.draw()
+    print()
+    print()
+    for move_set in moves_to_current:
+        for move in move_set:
+            print("Making Move " + str(move))
+            start_pos.make_move(move)
+            if start_pos.to_move == "C":
+                start_pos.to_move = "L"
+            else:  # start_pos.to_move == "L"
+                start_pos.to_move = "C"
+            start_pos.draw()
+            print()
+            print()
+            print()
+        if start_pos.to_move == "C":
+            start_pos.to_move = "L"
+        else:  # start_pos.to_move == "L"
+            start_pos.to_move = "C"
 
 
 class GenerateMoves:
@@ -93,18 +112,24 @@ class GenerateMoves:
 
         if position.to_move == "C":
             capital_bitboards = self.split_bitboard(position.current_board[0])
-
             # Array that contains [(start position)[0] and 1 to 2 arrays at [1] and [2] that have bitboard lists]
             bitboard_move_list = []
+            # List to keep track of only skips
+            skip_list = []
             # For each individual piece
             for bitboard_index in range(len(capital_bitboards)):
                 (left_bitboard, left_was_skip, right_bitboard, right_was_skip) = self.find_moves_regular(capital_bitboards[bitboard_index], position)
-
                 if left_was_skip or right_was_skip:
                     # Looks like this [[move1, move2], [move1], [move1, move2, move3]]
                     trail_array = self.get_moves_skipping(position, capital_bitboards[bitboard_index], [])
-                    bitboard_move_list.append(trail_array)
-
+                    trail_array = self.extract_array_format(trail_array)
+                    # Use the largest -> rule of thumb assumption that's almost always true.
+                    longest_skip = []
+                    for move in trail_array:
+                        if len(move) > len(longest_skip):
+                            longest_skip = move
+                    # Append skip moves to the skip list
+                    skip_list.append(longest_skip)
                 # Fill in the non skips
                 if not left_was_skip and left_bitboard != 0:
                     bitboard_move_list.append(self.get_algebraic_notation_from_single_bitboard(capital_bitboards[bitboard_index])
@@ -112,12 +137,21 @@ class GenerateMoves:
                 if not right_was_skip and right_bitboard != 0:
                     bitboard_move_list.append(self.get_algebraic_notation_from_single_bitboard(capital_bitboards[bitboard_index])
                                                                + self.get_algebraic_notation_from_single_bitboard(right_bitboard))
+            # Mandate skips if available
+            if len(skip_list) > 0:
+                # (Skip list already formatted)
+                bitboard_move_list = skip_list
+            else:
+                bitboard_move_list = self.extract_array_format(bitboard_move_list)
             return bitboard_move_list
+
         else:  # position.to_move == "L"
             lower_case_bitboards = self.split_bitboard(position.current_board[1])
 
             # Array that contains [(start position)[0] and 1 to 2 arrays at [1] and [2] that have bitboard lists]
             bitboard_move_list = []
+            # List to keep track of only skips
+            skip_list = []
             # For each individual piece
             for bitboard_index in range(len(lower_case_bitboards)):
                 (left_bitboard, left_was_skip, right_bitboard, right_was_skip) = self.find_moves_regular(
@@ -126,8 +160,14 @@ class GenerateMoves:
                 if left_was_skip or right_was_skip:
                     # Looks like this [[move1, move2], [move1], [move1, move2, move3]]
                     trail_array = self.get_moves_skipping(position, lower_case_bitboards[bitboard_index], [])
-                    bitboard_move_list.append(trail_array)
-
+                    trail_array = self.extract_array_format(trail_array)
+                    # Use the largest -> rule of thumb assumption that's almost always true.
+                    longest_skip = []
+                    for move in trail_array:
+                        if len(move) > len(longest_skip):
+                            longest_skip = move
+                    # Append skip moves to the skip list
+                    skip_list.append(longest_skip)
                 # Fill in the non skips
                 if not left_was_skip and left_bitboard != 0:
                     bitboard_move_list.append(
@@ -137,41 +177,47 @@ class GenerateMoves:
                     bitboard_move_list.append(
                         self.get_algebraic_notation_from_single_bitboard(lower_case_bitboards[bitboard_index])
                         + self.get_algebraic_notation_from_single_bitboard(right_bitboard))
+            # Mandate skips if available
+            if len(skip_list) > 0:
+                # (Skip list already formatted)
+                bitboard_move_list = skip_list
+            else:
+                bitboard_move_list = self.extract_array_format(bitboard_move_list)
             return bitboard_move_list
 
     # Takes the output array from get_moves_skipping() and returns it in a nicer form for minimax to use
     def extract_array_format(self, array):
 
-        # # Check if an object contains a list
-        # def list_contains_array(array2):
-        #     if not isinstance(array2, list):
-        #         return False
-        #     for variable in array2:
-        #         if isinstance(variable, list):
-        #             return True
-        #     return False
+        # Check if an object contains a list
+        def list_contains_array(array2):
+            if not isinstance(array2, list):
+                return False
+            for variable in array2:
+                if isinstance(variable, list):
+                    return True
+            return False
         # Initialize returned array
         returned_array = []
 
-        # # Recursively cycle through values
-        # def value_cycle(arr):
-        #     for value in arr:
-        #         # if the object doesn't contain another list
-        #         if not list_contains_array(value):
-        #             # If it is a string append it as a list
-        #             if isinstance(value, str):
-        #                 returned_array.append([value])
-        #             # Otherwise, append it as the list it is
-        #             else:
-        #                 returned_array.append(value)
-        #
-        #         elif not list_contains_array(value[:2]):
-        #             returned_array.append(value[:2])
-        #             if len(value) > 2:
-        #                 value_cycle(value[2:3])
-        #         else:
-        #             value_cycle(value)
-        # value_cycle(array)
+        # Recursively cycle through values
+        def value_cycle(arr):
+            for value in arr:
+                # if the object doesn't contain another list
+                if not list_contains_array(value):
+                    # If it is a string append it as a list
+                    if isinstance(value, str):
+                        returned_array.append([value])
+                    # Otherwise, append it as the list it is
+                    else:
+                        returned_array.append(value)
+
+                elif not list_contains_array(value[:2]):
+                    returned_array.append(value[:2])
+                    if len(value) > 2:
+                        value_cycle(value[2:3])
+                else:
+                    value_cycle(value)
+        value_cycle(array)
         return returned_array
 
     # Recursive Function that finds all skip possibilities
@@ -180,7 +226,8 @@ class GenerateMoves:
         # Base Case if there are no more skipping moves left or right
         (left_bitboard, left_was_skip, right_bitboard, right_was_skip) = self.find_moves_regular(node_piece_bitboard, start_position)
         # Array returned each call
-        returned_arr = []
+        returned_arr_left = []
+        returned_arr_right = []
         # If left has a skip opportunity
         if left_was_skip:
             # Make a copy of the position
@@ -198,14 +245,14 @@ class GenerateMoves:
 
             # Copy over moves from paths into the returned array (create deep copy)
             for move in paths:
-                returned_arr.append(move)
+                returned_arr_left.append(move)
             # Append newly found move first
-            returned_arr.append(from_string+to_string)
+            returned_arr_left.append(from_string+to_string)
             # Recursive call to get possibilities from this new place
-            new_arr = self.get_moves_skipping(position_copy, left_bitboard, returned_arr)
+            new_arr = self.get_moves_skipping(position_copy, left_bitboard, returned_arr_left)
             # If there are any new possibilities, add them
             if len(new_arr) != 0:
-                returned_arr.append(new_arr)
+                returned_arr_left.append(new_arr)
 
         # Comments are the same
         if right_was_skip:
@@ -218,16 +265,21 @@ class GenerateMoves:
             else:  # position_copy.to_move == "L":
                 position_copy.to_move = "C"
             for move in paths:
-                returned_arr.append(move)
-            returned_arr.append(from_string+to_string)
-            new_arr = self.get_moves_skipping(position_copy, right_bitboard, returned_arr)
+                returned_arr_right.append(move)
+            returned_arr_right.append(from_string+to_string)
+            new_arr = self.get_moves_skipping(position_copy, right_bitboard, returned_arr_right)
             if len(new_arr) != 0:
-                returned_arr.append(new_arr)
+                returned_arr_right.append(new_arr)
 
+
+        # Combine left and right arrays (if you have skip right AND left, this rids of ambiguity
+        total_arr = []
+        for value in returned_arr_right:
+            total_arr.append(value)
+        for value in returned_arr_left:
+            total_arr.append(value)
         # Base case / general return function= neither path has another skip
-        return returned_arr
-
-
+        return total_arr
 
     # Put in a Position object, encoded in which is a string for who's to move, and it returns a bitboard of all
     # the squares that can be moved to
@@ -260,6 +312,12 @@ class GenerateMoves:
             left_move_was_skip = lc_pieces_shifted_legal_left > 0
             right_move = move_without_skip_right | lc_pieces_shifted_legal_right
             right_move_was_skip = lc_pieces_shifted_legal_right > 0
+
+            # Only for capital -> Make sure no overflow -> 0's don't automatically get cut off when go about 64 bits
+            if left_move > int("1000000000000000000000000000000000000000000000000000000000000000", 2):
+                left_move = 0
+            if right_move > int("1000000000000000000000000000000000000000000000000000000000000000", 2):
+                right_move = 0
 
             return left_move, left_move_was_skip, right_move, right_move_was_skip
 
@@ -342,7 +400,7 @@ class Position:
     def __init__(self, bitboard, to_move):
         self.current_board = bitboard
         self.to_move = to_move
-        self.moves_to_current = np.array([])  # Keeps Track of String of Moves to Current
+        self.moves_to_current = []  # Keeps Track of String of Moves to Current
 
     # For now just returns the sum of pieces
     def get_evaluation(self):
@@ -361,7 +419,7 @@ class Position:
         return total_cap - total_lc
 
     def add_move_to_current(self, algebraic_move):
-        self.moves_to_current = np.append(self.moves_to_current, algebraic_move)
+        self.moves_to_current.append(algebraic_move)
 
     # Give it Algebraic Notation And Makes Move -> Returns true if skipped/took a piece
     def make_move(self, algebraic_move):
@@ -475,19 +533,25 @@ class Minimax:
             if len(possible_moves) == 0:
                 return pos
 
-
-
             # Get all possible moves
-            for move in possible_moves:
+            for move_arr in possible_moves:
                 # Get Position Copy Object (Child) (Including history)
                 child_pos = pos.get_position_copy()
                 # Make the Move in this child object
-                child_pos.make_move(move)
+                for single_move in move_arr:
+                    child_pos.make_move(single_move)
+                    if child_pos.to_move == "L":
+                        child_pos.to_move = "C"
+                    else:  # child_pos.to_move == "C":
+                        child_pos.to_move = "L"
+                if child_pos.to_move == "L":
+                    child_pos.to_move = "C"
+                else:  # child_pos.to_move == "C":
+                    child_pos.to_move = "L"
                 # Add the move to moves to current
-                child_pos.add_move_to_current(move)
+                child_pos.add_move_to_current(move_arr)
                 # Recursive Call To Minimax
                 temp_position = self.minimax(child_pos, depth-1, alpha, beta)
-
                 # Check if this position is better
                 if temp_position.get_evaluation() > best_value:
                     # Set least moves equal to this better position found
@@ -505,7 +569,7 @@ class Minimax:
                     # Set the best position equal to the new position
                     best_position = temp_position
 
-                # Need to come back to understand alpha beta pruning
+                # # Need to come back to understand alpha beta pruning
                 alpha = max(alpha, best_value)
                 if beta <= alpha:
                     break
@@ -526,14 +590,22 @@ class Minimax:
                 return pos
 
             # Get all possible moves
-            for move in possible_moves:
+            for move_arr in possible_moves:
                 # Get Position Copy Object (Child) (Including history)
                 child_pos = pos.get_position_copy()
                 # Make the Move in this child object
-                child_pos.make_move(move)
+                for single_move in move_arr:
+                    child_pos.make_move(single_move)
+                    if child_pos.to_move == "C":
+                        child_pos.to_move = "L"
+                    else:  # child_pos.to_move == "L":
+                        child_pos.to_move = "C"
+                if child_pos.to_move == "C":
+                    child_pos.to_move = "L"
+                else:  # child_pos.to_move == "L":
+                    child_pos.to_move = "C"
                 # Add the move to moves to current
-                child_pos.add_move_to_current(move)
-
+                child_pos.add_move_to_current(move_arr)
                 # Recursive Call To Minimax
                 temp_position = self.minimax(child_pos, depth - 1, alpha, beta)
 
