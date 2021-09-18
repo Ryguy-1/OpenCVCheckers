@@ -1,10 +1,10 @@
 from BoardViewer import BoardViewer
 from BoardAnalyzer import BoardAnalyzer
 from GenerateMoves import analyze_read_bord
-from GenerateMoves import Position
-import cv2
-import threading
-import numpy as np
+
+# Ryland Checkers: A New Quicker Version of Checkers
+# Goal: Get 1 Piece to the Other Side Before Your Opponent, OR Wipe Them From the Board
+# First to do Either, wins. Good Luck (you'll need it).
 
 
 def main():

@@ -37,7 +37,7 @@ def analyze_read_bord(string_board, casing):
     # New Minimax Object
     minimax = Minimax()
     # Return Next Best Move
-    return minimax.minimax(start_pos, 8, Minimax.min, Minimax.max).moves_to_current[0]
+    return minimax.minimax(start_pos, 10, Minimax.min, Minimax.max).moves_to_current[0]
 
 
 # Purpose: Encapsulates Member Variables and Methods Needed to Generate a Move Sequence
@@ -75,6 +75,11 @@ class GenerateMoves:
     g_file = int("0000001000000010000000100000001000000010000000100000001000000010", 2)
     # Second to Right Column in Binary
     h_file = int("0000000100000001000000010000000100000001000000010000000100000001", 2)
+
+    # Rank 8 in Binary
+    rank_8 = int("1111111100000000000000000000000000000000000000000000000000000000", 2)
+    # Rank 1 in Binary
+    rank_1 = int("0000000000000000000000000000000000000000000000000000000011111111", 2)
 
     # Length Compare (64 bits)
     print(len("0000000000000000000000000000000000000000000000000000000000000000"))
@@ -405,10 +410,10 @@ class Position:
         total_lc = len(self.move_generator.split_bitboard((self.current_board[1])))
 
         # Checks for game won and returns a value accordingly
-        if total_cap == 0:
-            return -10000000
-        elif total_lc == 0:
-            return 10000000
+        if total_cap == 0 or (self.move_generator.rank_1 & self.current_board[1] > 0):
+            return -100000000000
+        if total_lc == 0 or (self.move_generator.rank_8 & self.current_board[0] > 0):
+            return 100000000000
 
         # Otherwise, return the point differential (cap = +, lc = -)
         return total_cap - total_lc
