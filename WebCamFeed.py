@@ -5,11 +5,13 @@ import numpy as np
 import time
 
 
+# Encapsulates WebCam Feed. (Get Current Frame through web_cam_feed.current_frame)
 class WebCamFeed:
 
-    # Title of Main Frame
+    # Title of Frame
     frame_title = "Checkers Board Viewer [('q') to Quit, ('r') to Reset Mask]"
 
+    # Purpose: Initialize Video Capture / Member Variables
     def __init__(self, frame_width, frame_height):
         print("Initializing Webcam Stream...")
         # Video Capture Variable initialize and set size(0 = webcam live feed, cv2.CAP_DSHOW = Direct Show (video input)
@@ -35,7 +37,8 @@ class WebCamFeed:
         # Initialize Cropping Feature
         self.prompt_crop = threading.Thread(target=self.prompt_crop).start()
 
-    # Set Member Variable (current_frame) equal to recent read frame
+    # Purpose: Camera Loop.
+    # Output: Set Member (self.current_frame) equal to most recent frame (read later in Board Viewer)
     def run_live_feed(self):
         # While is running
         while self.is_running:
@@ -68,6 +71,7 @@ class WebCamFeed:
             elif keyboard.is_pressed('r'):  # Clear Mask
                 self.mask = None
 
+    # Purpose: Make Left Click Bind to Crop Function
     def prompt_crop(self):
         # While the current frame isn't None -> Then wait an additional 0.3 seconds (make sure loaded)
         while True:
@@ -75,7 +79,7 @@ class WebCamFeed:
                 break
         time.sleep(0.3)
 
-        # Function linked to left click on frame
+        # Function linked to left click on frame (through cv2)
         def lc_callback(event, x, y, flags, param):
             # If Left MB Down
             if event == cv2.EVENT_LBUTTONDOWN:
@@ -98,6 +102,7 @@ class WebCamFeed:
         # Sets the webcam feed window's callback function when lc is pressed to lc_callback
         cv2.setMouseCallback(self.frame_title, lc_callback)
 
+    # Purpose: Update Member Variables for Crop and self.mask
     def update_mask(self):
         # Set the Mask Here
         self.mask = np.zeros(self.current_frame.shape[:2], dtype="uint8")

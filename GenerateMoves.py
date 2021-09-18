@@ -1,21 +1,19 @@
 import numpy as np
 
-
 # Assumptions / Rules:
 # - If a skip is longer than another skip, only consider the longer skip.
 # - If a skip is available, you have to take it (rule of the game)
-# - If there are two skips of equal length, only one is considered **
+
+# Bitboards: https://en.wikipedia.org/wiki/Bitboard
 
 
-# Takes a String Board (As received from the board viewer) and returns a list of good moves, in order from best
-# To Worst
+# Purpose: Takes a String Board (As received from the board viewer) and returns next best move
+# Input: Board Representation (From Board Viewer), "C" or "L" for next move
 def analyze_read_bord(string_board, casing):
-    # Holds a string of 1 if piece and 0 if not piece
+
+    # Strings for locations of "C" and "L" in binary
     cap_string = ""
-    # The bitboard that the string gets converted into
-    cap_bitboard = 0
     lc_string = ""
-    lc_bitboard = 0
 
     # Convert Board to Bitboard Strings
     for row in string_board:
@@ -36,41 +34,16 @@ def analyze_read_bord(string_board, casing):
 
     # Initialize Board StartPos
     start_pos = Position([cap_bitboard, lc_bitboard], casing)
+    # New Minimax Object
     minimax = Minimax()
+    # Return Next Best Move
     return minimax.minimax(start_pos, 8, Minimax.min, Minimax.max).moves_to_current[0]
-    # gen_moves = GenerateMoves()
-    # return gen_moves.get_move_list_algebraic(start_pos)
-
-    # print(f'Eval: {start_pos.get_evaluation()}')
-    # generate_moves = GenerateMoves()
-    # print(f"Return Value: {generate_moves.get_move_list_algebraic(start_pos)}")
-    # minimax = Minimax()
-    # moves_to_current = minimax.minimax(start_pos, 8, Minimax.min, Minimax.max).moves_to_current
-    # print(f'Nodes Searched = {minimax.nodes_searched}')
-    # print(moves_to_current)
-    # start_pos.draw()
-    # print()
-    # print()
-    # for move_set in moves_to_current:
-    #     for move in move_set:
-    #         print("Making Move " + str(move))
-    #         start_pos.make_move(move)
-    #         if start_pos.to_move == "C":
-    #             start_pos.to_move = "L"
-    #         else:  # start_pos.to_move == "L"
-    #             start_pos.to_move = "C"
-    #         start_pos.draw()
-    #         print()
-    #         print()
-    #         print()
-    #     if start_pos.to_move == "C":
-    #         start_pos.to_move = "L"
-    #     else:  # start_pos.to_move == "L"
-    #         start_pos.to_move = "C"
 
 
+# Purpose: Encapsulates Member Variables and Methods Needed to Generate a Move Sequence
 class GenerateMoves:
 
+    # Example of a Board Representation from BoardViewer
     # L ~ L ~ L ~ L ~
     # ~ L ~ L ~ L ~ L
     # L ~ L ~ L ~ L ~
@@ -90,29 +63,31 @@ class GenerateMoves:
             ["h2", "g2", "f2", "e2", "d2", "c2", "b2", "a2"],
             ["h1", "g1", "f1", "e1", "d1", "c1", "b1", "a1"]]
 
+    # Used for Splitting Bitboards into Multiple
     reference_bitboard_array = []  # Array of 64 bitboards, each one with a single 1 populated (left to right)
 
     # These are switched from the algebraic notation array, just because the array is mirrored (same idea though)
-    # Represents the Left Column In Binary
+    # Left Column In Binary
     a_file = int("1000000010000000100000001000000010000000100000001000000010000000", 2)
+    # Second to Left Column in Binary
     b_file = int("0100000001000000010000000100000001000000010000000100000001000000", 2)
-    # Represents the Right Column In Binary
+    # Right Column In Binary
     g_file = int("0000001000000010000000100000001000000010000000100000001000000010", 2)
+    # Second to Right Column in Binary
     h_file = int("0000000100000001000000010000000100000001000000010000000100000001", 2)
 
     # Length Compare (64 bits)
     print(len("0000000000000000000000000000000000000000000000000000000000000000"))
 
+    # Purpose: Initialize Reference Array
     def __init__(self):
+        # If Static Reference Bitboard Array Hasn't been populated, populate it
         if len(self.reference_bitboard_array) == 0:
             self.populate_reference_array()
-        pass
 
-    # You can only attack/move on a diagonal
-    # INT HAS NO MAX SIZE IN PYTHON 3
-
-    # Give it a position, and it returns all of the potential moves in algebraic notation for the side up
-    # (side up encoded in the position object)
+    # Purpose: Given Position object, return all of the potential moves in algebraic notation for the side to move
+    # Input: Position Object with all necessary data encapsulated
+    # Output: Array of all Possible Moves from that position
     def get_move_list_algebraic(self, position):
 
         if position.to_move == "C":
@@ -180,7 +155,7 @@ class GenerateMoves:
                         if len(move) == len(longest_skip):
                             skip_arr_temp.append(move)
                     # Append skip moves to the skip list
-                    skip_list.append(skip_arr_temp)
+                    skip_list = skip_arr_temp
                 # Fill in the non skips
                 if not left_was_skip and left_bitboard != 0:
                     bitboard_move_list.append(
@@ -198,7 +173,9 @@ class GenerateMoves:
                 bitboard_move_list = self.extract_array_format(bitboard_move_list)
             return bitboard_move_list
 
-    # Takes the output array from get_moves_skipping() and returns it in a nicer form for minimax to use
+    # Purpose: Formats Array Nicely from get_moves_skipping
+    # Input: get_moves_skipping array
+    # Output: Cleanly formatted get_moves_skipping_array
     def extract_array_format(self, array):
 
         # Check if an object contains a list
@@ -233,7 +210,9 @@ class GenerateMoves:
         value_cycle(array)
         return returned_array
 
-    # Recursive Function that finds all skip possibilities
+    # Purpose: Recursively find All Skip Combinations
+    # Input: Start Position, Start Piece (in bitboard representation), paths to this point list
+    # Output: Possible Paths after that Point
     def get_moves_skipping(self, start_position, node_piece_bitboard, paths):
         # print(f'Node piece board{node_piece_bitboard}')
         # Base Case if there are no more skipping moves left or right
@@ -284,8 +263,7 @@ class GenerateMoves:
             if len(new_arr) != 0:
                 returned_arr_right.append(new_arr)
 
-
-        # Combine left and right arrays (if you have skip right AND left, this rids of ambiguity
+        # Combine left and right arrays (if you have skip right AND left, this rids of ambiguity)
         total_arr = []
         for value in returned_arr_right:
             total_arr.append(value)
@@ -294,8 +272,9 @@ class GenerateMoves:
         # Base case / general return function= neither path has another skip
         return total_arr
 
-    # Put in a Position object, encoded in which is a string for who's to move, and it returns a bitboard of all
-    # the squares that can be moved to
+    # Purpose: From Position Object, find possible moves of a certain piece.
+    # Input: Piece Bitboard, Position object
+    # Output: left_move bitboard, left_move_was_skip, right_move bitboard, right_move_was_skip
     def find_moves_regular(self, this_piece, position):
         cap_bitboard = position.current_board[0]
         lc_bitboard = position.current_board[1]
@@ -362,9 +341,7 @@ class GenerateMoves:
 
             return left_move, left_move_was_skip, right_move, right_move_was_skip
 
-    # Gets a reference array to assist in separating bits from the bitboard array of a position
-    # Each index is bit shifted 1 to the right to create an array of 64 bitboards
-    # We can then use these and and operators to split the bitboard into each individual piece
+    # Purpose: Gets Array of len 64, each index is bit shifted over 1 to right (used in splitting bitboards)
     def populate_reference_array(self):
         starting = int("1000000000000000000000000000000000000000000000000000000000000000", 2)
         returning_array = []
@@ -373,7 +350,7 @@ class GenerateMoves:
             starting = starting >> 1
         self.reference_bitboard_array = returning_array
 
-    # Takes a bitboard and returns an array of bitboards, each one with a single 1 populated for a single checker
+    # Purpose: Takes a bitboard and returns an array of bitboards with 1 bit populated each
     def split_bitboard(self, bitboard):
         returned_array = []
         for ref_board in self.reference_bitboard_array:
@@ -381,7 +358,8 @@ class GenerateMoves:
                 returned_array.append(ref_board)
         return returned_array
 
-    # Input: bitboard with a single 1 (single piece represented) and returns the string with algebraic notation
+    # Input: bitboard with a single 1 (single piece represented)
+    # Output: the string with algebraic notation
     def get_algebraic_notation_from_single_bitboard(self, bitboard):
         # Gets index of the bit from bitboard
         try:
@@ -397,6 +375,7 @@ class GenerateMoves:
                     return square
                 counter += 1
 
+    # Purpose: Debugging print bitboard
     def print_bitboard(self, bitboard):
         string_bitboard = format(bitboard, '064b')
         for bit_idx in range(len(string_bitboard)):
@@ -405,17 +384,20 @@ class GenerateMoves:
             print(string_bitboard[bit_idx], end=' ')
 
 
-# Keeps track of board position
+# Keeps track of board position with all necessary data/action functions encapsulated
 class Position:
 
+    # Static Move Generator Object
     move_generator = GenerateMoves()
 
+    # Input: Bitboard Array [capital, lower case], "C" or "L" for next to move
     def __init__(self, bitboard, to_move):
         self.current_board = bitboard
         self.to_move = to_move
-        self.moves_to_current = []  # Keeps Track of String of Moves to Current
+        # Keeps Track of String of Moves to Current
+        self.moves_to_current = []
 
-    # For now just returns the sum of pieces
+    # Purpose: Assign a Number to How "Good" a Board is for each player -> (+ = good for C, - = good for L)
     def get_evaluation(self):
         # Gets the total amount of capital pieces in its bitboard
         total_cap = len(self.move_generator.split_bitboard(self.current_board[0]))
@@ -431,13 +413,15 @@ class Position:
         # Otherwise, return the point differential (cap = +, lc = -)
         return total_cap - total_lc
 
+    # Add move to member variable moves_to_current
     def add_move_to_current(self, algebraic_move):
         self.moves_to_current.append(algebraic_move)
 
-    # Give it Algebraic Notation And Makes Move -> Returns true if skipped/took a piece
+    # Purpose: Makes Move on Position Object
+    # Input: Move in Algebraic Notation
     def make_move(self, algebraic_move):
 
-        if algebraic_move == "":
+        if algebraic_move == "" or len(algebraic_move) != 4:
             return
 
         # Strings of moves separated
@@ -492,16 +476,20 @@ class Position:
         else:  # self.to_move == "L"
             self.to_move = "C"
 
-    # Return a copy object of the same position
+    # Purpose: Return a copy object of the same position
+    # Output: An Identical Position Object, but in no way Linked
     def get_position_copy(self):
         new_board = [self.current_board[0], self.current_board[1]]
         copy_pos = Position(new_board, self.to_move)
         copy_pos.moves_to_current = self.moves_to_current.copy()
         return copy_pos
 
+    # Draw Position Object to Console
     def draw(self):
+        # Format Bitboards as Strings
         string_bitboard_cap = format(self.current_board[0], '064b')
         string_bitboard_lc = format(self.current_board[1], '064b')
+        # Print out Board
         for bit_idx in range(len(string_bitboard_cap)):
             if bit_idx % 8 == 0 and bit_idx != 0:
                 print()
@@ -513,23 +501,23 @@ class Position:
                 print("-", end=' ')
 
 
+# Purpose: Main Move Logic Function. Uses Famous, yet simple, Minimax Algorithm
 class Minimax:
 
+    # Static move_generator object
     move_generator = GenerateMoves()
 
     # Values that won't be reached under current evaluation method
-    max = 10000000
-    min = -10000000
+    max = 100000000000
+    min = -100000000000
 
+    # Purpose: Initialize nodes_searched to 0
     def __init__(self):
         self.nodes_searched = 0
 
-    # Uses Alpha Beta Pruned Minimax Algorithm to find best move in a certain situation
-    # (isMaximizingPlayer from position!!)
+    # Purpose: Implementation of Alpha Beta Pruned Minimax Algorithm to find best move sequence from a certain situation
     def minimax(self, pos, depth, alpha, beta):
-        # print()
-        # print("Ran Position")
-        # print()
+
         self.nodes_searched += 1
 
         # Reached Leaf Node (Game is Over)
