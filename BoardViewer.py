@@ -24,17 +24,17 @@ class BoardViewer:
                                               ])
         self.board_representation = self.starting_board_representation.copy()
         # Number for adaptive thresholding
-        self.adaptive_threshold_num = 45  # was 111  ------>> VARIABLE 1 -> Has Slider :)
+        self.adaptive_threshold_num = 117  # was 111  ------>> VARIABLE 1 -> Has Slider :)
         # Reset Switch
         self.adaptive_threshold_num_start = self.adaptive_threshold_num
         # Minimum Area Considered as Piece
-        self.contour_area_cutoff_min = 674  # --------->> VARIABLE 2 -> Has Slider :)
+        self.contour_area_cutoff_min = 510  # --------->> VARIABLE 2 -> Has Slider :)
         # Maimum Area Considered as Piece
-        self.contour_area_cutoff_max = 1086  # ---------->> Maybe_VARIABLE 3 -> Has Slider :)
+        self.contour_area_cutoff_max = 1342  # ---------->> Maybe_VARIABLE 3 -> Has Slider :)
         # Difference in Mean of HSV Values Considered 1 Color
-        self.color_distinguish_threshold = 30
+        self.color_distinguish_threshold = 50
         # HSV Separator -> Change Accordingly
-        self.hsv_1 = 124  # --------->> Maybe_VARIABLE 4 -> Has Slider :)
+        self.hsv_1 = 18  # --------->> Maybe_VARIABLE 4 -> Has Slider :)
         # Gaussian Blur Number
         self.gaussian_blur = (13, 13)
         # Canny Edge Detection Lower, Upper
@@ -142,10 +142,9 @@ class BoardViewer:
                     (self.ranks_x, self.files_y) = self.get_x_y_lines()
                     is_first_show = False
 
-                self.print_board(self.board_representation)
-                for i in range(5):
-                    print()
-
+                # self.print_board(self.board_representation)
+                # for i in range(5):
+                #     print()
                 # Wait 10 ms in between frames
                 cv2.waitKey(self.frame_delay)
                 self.frame_counter += 1
@@ -186,7 +185,7 @@ class BoardViewer:
     def update_contour_list(self, piece_contour_list, image):
 
         # Convert to HSV colorspace for easier color distinction
-        image_hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+        _, image_hsv, _ = cv2.split(cv2.cvtColor(image, cv2.COLOR_BGR2HSV))
         # Initialize HSV_value array (parallel with piece_contour_list)
         hsv_values = []
         # Get HSV mean Values for Each Piece and append to array (easy way to distinguish between colors) HSV = very
@@ -211,9 +210,9 @@ class BoardViewer:
             # If the color value of this particular hsv_value is far enough away, it is a different color
             if abs(color_1-hsv_values[i]) < self.color_distinguish_threshold:
                 # Same color
-                new_list[0].append(piece_contour_list[i])
-            else:  # Other color
                 new_list[1].append(piece_contour_list[i])
+            else:  # Other color
+                new_list[0].append(piece_contour_list[i])
         # Say How Many Pieces Each Side Has on the Board
         # print(f'Color 1 Has {len(np.array(new_list)[0])//2} pieces')
         # print(f'Color 2 Has {len(np.array(new_list)[1])//2} pieces')

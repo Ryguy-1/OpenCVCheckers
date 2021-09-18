@@ -36,32 +36,37 @@ def analyze_read_bord(string_board, casing):
 
     # Initialize Board StartPos
     start_pos = Position([cap_bitboard, lc_bitboard], casing)
-    print(f'Eval: {start_pos.get_evaluation()}')
-    generate_moves = GenerateMoves()
-    print(f"Return Value: {generate_moves.get_move_list_algebraic(start_pos)}")
     minimax = Minimax()
-    moves_to_current = minimax.minimax(start_pos, 8, Minimax.min, Minimax.max).moves_to_current
-    print(f'Nodes Searched = {minimax.nodes_searched}')
-    print(moves_to_current)
-    start_pos.draw()
-    print()
-    print()
-    for move_set in moves_to_current:
-        for move in move_set:
-            print("Making Move " + str(move))
-            start_pos.make_move(move)
-            if start_pos.to_move == "C":
-                start_pos.to_move = "L"
-            else:  # start_pos.to_move == "L"
-                start_pos.to_move = "C"
-            start_pos.draw()
-            print()
-            print()
-            print()
-        if start_pos.to_move == "C":
-            start_pos.to_move = "L"
-        else:  # start_pos.to_move == "L"
-            start_pos.to_move = "C"
+    return minimax.minimax(start_pos, 8, Minimax.min, Minimax.max).moves_to_current[0]
+    # gen_moves = GenerateMoves()
+    # return gen_moves.get_move_list_algebraic(start_pos)
+
+    # print(f'Eval: {start_pos.get_evaluation()}')
+    # generate_moves = GenerateMoves()
+    # print(f"Return Value: {generate_moves.get_move_list_algebraic(start_pos)}")
+    # minimax = Minimax()
+    # moves_to_current = minimax.minimax(start_pos, 8, Minimax.min, Minimax.max).moves_to_current
+    # print(f'Nodes Searched = {minimax.nodes_searched}')
+    # print(moves_to_current)
+    # start_pos.draw()
+    # print()
+    # print()
+    # for move_set in moves_to_current:
+    #     for move in move_set:
+    #         print("Making Move " + str(move))
+    #         start_pos.make_move(move)
+    #         if start_pos.to_move == "C":
+    #             start_pos.to_move = "L"
+    #         else:  # start_pos.to_move == "L"
+    #             start_pos.to_move = "C"
+    #         start_pos.draw()
+    #         print()
+    #         print()
+    #         print()
+    #     if start_pos.to_move == "C":
+    #         start_pos.to_move = "L"
+    #     else:  # start_pos.to_move == "L"
+    #         start_pos.to_move = "C"
 
 
 class GenerateMoves:
@@ -125,11 +130,15 @@ class GenerateMoves:
                     trail_array = self.extract_array_format(trail_array)
                     # Use the largest -> rule of thumb assumption that's almost always true.
                     longest_skip = []
+                    skip_arr_temp = []
                     for move in trail_array:
                         if len(move) > len(longest_skip):
                             longest_skip = move
+                    for move in trail_array:
+                        if len(move) == len(longest_skip):
+                            skip_arr_temp.append(move)
                     # Append skip moves to the skip list
-                    skip_list.append(longest_skip)
+                    skip_list = skip_arr_temp
                 # Fill in the non skips
                 if not left_was_skip and left_bitboard != 0:
                     bitboard_move_list.append(self.get_algebraic_notation_from_single_bitboard(capital_bitboards[bitboard_index])
@@ -163,11 +172,15 @@ class GenerateMoves:
                     trail_array = self.extract_array_format(trail_array)
                     # Use the largest -> rule of thumb assumption that's almost always true.
                     longest_skip = []
+                    skip_arr_temp = []
                     for move in trail_array:
                         if len(move) > len(longest_skip):
                             longest_skip = move
+                    for move in trail_array:
+                        if len(move) == len(longest_skip):
+                            skip_arr_temp.append(move)
                     # Append skip moves to the skip list
-                    skip_list.append(longest_skip)
+                    skip_list.append(skip_arr_temp)
                 # Fill in the non skips
                 if not left_was_skip and left_bitboard != 0:
                     bitboard_move_list.append(
