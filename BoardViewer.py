@@ -289,7 +289,6 @@ class BoardViewer:
                     # set the file number to file_idx
                     file_num = file_idx
             player_0_rank_files.append((rank_num, file_num))
-
         # Player 1 indices for coordinates
         player_1_rank_files = []  # Array of tuples with rank and file (x, then y)
         # Loop through their coordinates

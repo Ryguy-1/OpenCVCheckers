@@ -3,6 +3,7 @@ import keyboard
 import cv2
 from GenerateMoves import analyze_read_bord
 import numpy as np
+import time
 
 
 class BoardAnalyzer:
@@ -22,7 +23,7 @@ class BoardAnalyzer:
                     key_pressed = 'space'
                     checking_keys = False
                     break
-                cv2.waitKey(1)
+                time.sleep(0.1)
 
             if key_pressed == 'space':
                 print()

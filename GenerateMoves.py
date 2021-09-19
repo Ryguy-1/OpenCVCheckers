@@ -34,6 +34,8 @@ def analyze_read_bord(string_board, casing):
 
     # Initialize Board StartPos
     start_pos = Position([cap_bitboard, lc_bitboard], casing)
+    # print(GenerateMoves().get_moves_skipping(start_pos, int("0000000000000000000000000000000000000000010000000000000000000000", 2), []))
+    # print(GenerateMoves().get_move_list_algebraic(start_pos))
     # New Minimax Object
     minimax = Minimax()
     # Return Next Best Move
@@ -107,6 +109,7 @@ class GenerateMoves:
                 if left_was_skip or right_was_skip:
                     # Looks like this [[move1, move2], [move1], [move1, move2, move3]]
                     trail_array = self.get_moves_skipping(position, capital_bitboards[bitboard_index], [])
+                    # print(trail_array)
                     trail_array = self.extract_array_format(trail_array)
                     # Use the largest -> rule of thumb assumption that's almost always true.
                     longest_skip = []
@@ -118,18 +121,28 @@ class GenerateMoves:
                         if len(move) == len(longest_skip):
                             skip_arr_temp.append(move)
                     # Append skip moves to the skip list
-                    skip_list = skip_arr_temp
+                    skip_list.append(skip_arr_temp)
                 # Fill in the non skips
                 if not left_was_skip and left_bitboard != 0:
-                    bitboard_move_list.append(self.get_algebraic_notation_from_single_bitboard(capital_bitboards[bitboard_index])
-                                                               + self.get_algebraic_notation_from_single_bitboard(left_bitboard))
+                    from_string = self.get_algebraic_notation_from_single_bitboard(capital_bitboards[bitboard_index])
+                    to_string = self.get_algebraic_notation_from_single_bitboard(left_bitboard)
+                    if from_string != "" and to_string != "":
+                        bitboard_move_list.append(from_string+to_string)
                 if not right_was_skip and right_bitboard != 0:
-                    bitboard_move_list.append(self.get_algebraic_notation_from_single_bitboard(capital_bitboards[bitboard_index])
-                                                               + self.get_algebraic_notation_from_single_bitboard(right_bitboard))
+                    from_string = self.get_algebraic_notation_from_single_bitboard(capital_bitboards[bitboard_index])
+                    to_string = self.get_algebraic_notation_from_single_bitboard(right_bitboard)
+                    if from_string != "" and to_string != "":
+                        bitboard_move_list.append(from_string+to_string)
             # Mandate skips if available
             if len(skip_list) > 0:
-                # (Skip list already formatted)
-                bitboard_move_list = skip_list
+                # If is nested (has an extra dimension) pull out that extra dimension
+                bitboard_move_list = np.array(skip_list).squeeze().tolist()
+                if isinstance(bitboard_move_list, str):
+                    bitboard_move_list = [[bitboard_move_list]]
+                # If single string is compressed, uncompress it back to array
+                for index in range(len(bitboard_move_list)):
+                    if isinstance(bitboard_move_list[index], str):
+                        bitboard_move_list[index] = [bitboard_move_list[index]]
             else:
                 bitboard_move_list = self.extract_array_format(bitboard_move_list)
             return bitboard_move_list
@@ -160,20 +173,29 @@ class GenerateMoves:
                         if len(move) == len(longest_skip):
                             skip_arr_temp.append(move)
                     # Append skip moves to the skip list
-                    skip_list = skip_arr_temp
+                    skip_list.append(skip_arr_temp)
                 # Fill in the non skips
                 if not left_was_skip and left_bitboard != 0:
-                    bitboard_move_list.append(
-                        self.get_algebraic_notation_from_single_bitboard(lower_case_bitboards[bitboard_index])
-                        + self.get_algebraic_notation_from_single_bitboard(left_bitboard))
+                    from_string = self.get_algebraic_notation_from_single_bitboard(lower_case_bitboards[bitboard_index])
+                    to_string = self.get_algebraic_notation_from_single_bitboard(left_bitboard)
+                    if from_string != "" and to_string != "":
+                        bitboard_move_list.append(from_string+to_string)
                 if not right_was_skip and right_bitboard != 0:
-                    bitboard_move_list.append(
-                        self.get_algebraic_notation_from_single_bitboard(lower_case_bitboards[bitboard_index])
-                        + self.get_algebraic_notation_from_single_bitboard(right_bitboard))
+                    from_string = self.get_algebraic_notation_from_single_bitboard(lower_case_bitboards[bitboard_index])
+                    to_string = self.get_algebraic_notation_from_single_bitboard(right_bitboard)
+                    if from_string != "" and to_string != "":
+                        bitboard_move_list.append(from_string+to_string)
             # Mandate skips if available
             if len(skip_list) > 0:
-                # (Skip list already formatted)
-                bitboard_move_list = skip_list
+                # If is nested (has an extra dimension) pull out that extra dimension
+                bitboard_move_list = np.array(skip_list).squeeze().tolist()
+                # If there is a single string, squeeze turns to string, so turn back to array
+                if isinstance(bitboard_move_list, str):
+                    bitboard_move_list = [[bitboard_move_list]]
+                # If single string is compressed, uncompress it back to array
+                for index in range(len(bitboard_move_list)):
+                    if isinstance(bitboard_move_list[index], str):
+                        bitboard_move_list[index] = [bitboard_move_list[index]]
             else:
                 bitboard_move_list = self.extract_array_format(bitboard_move_list)
             return bitboard_move_list
@@ -233,7 +255,8 @@ class GenerateMoves:
             from_string = self.get_algebraic_notation_from_single_bitboard(node_piece_bitboard)
             to_string = self.get_algebraic_notation_from_single_bitboard(left_bitboard)
             # Make the move in the copied position
-            position_copy.make_move(from_string+to_string)
+            if from_string != "" and to_string != "":
+                position_copy.make_move(from_string+to_string)
             # Undo Move Changes -> Same person is moving twice
             if position_copy.to_move == "C":
                 position_copy.to_move = "L"
@@ -244,36 +267,43 @@ class GenerateMoves:
             for move in paths:
                 returned_arr_left.append(move)
             # Append newly found move first
-            returned_arr_left.append(from_string+to_string)
+            if from_string != "" and to_string != "":
+                returned_arr_left.append(from_string+to_string)
             # Recursive call to get possibilities from this new place
-            new_arr = self.get_moves_skipping(position_copy, left_bitboard, returned_arr_left)
+                new_arr = self.get_moves_skipping(position_copy, left_bitboard, returned_arr_left)
             # If there are any new possibilities, add them
-            if len(new_arr) != 0:
-                returned_arr_left.append(new_arr)
+                if len(new_arr) != 0:
+                    returned_arr_left.append(new_arr)
 
         # Comments are the same
         if right_was_skip:
             position_copy = start_position.get_position_copy()
             from_string = self.get_algebraic_notation_from_single_bitboard(node_piece_bitboard)
             to_string = self.get_algebraic_notation_from_single_bitboard(right_bitboard)
-            position_copy.make_move(from_string+to_string)
+            if from_string != "" and to_string != "":
+                position_copy.make_move(from_string+to_string)
             if position_copy.to_move == "C":
                 position_copy.to_move = "L"
             else:  # position_copy.to_move == "L":
                 position_copy.to_move = "C"
             for move in paths:
                 returned_arr_right.append(move)
-            returned_arr_right.append(from_string+to_string)
-            new_arr = self.get_moves_skipping(position_copy, right_bitboard, returned_arr_right)
-            if len(new_arr) != 0:
-                returned_arr_right.append(new_arr)
+            if from_string != "" and to_string != "":
+                returned_arr_right.append(from_string+to_string)
+                new_arr = self.get_moves_skipping(position_copy, right_bitboard, returned_arr_right)
+                if len(new_arr) != 0:
+                    returned_arr_right.append(new_arr)
 
         # Combine left and right arrays (if you have skip right AND left, this rids of ambiguity)
         total_arr = []
-        for value in returned_arr_right:
-            total_arr.append(value)
-        for value in returned_arr_left:
-            total_arr.append(value)
+        # for value in returned_arr_right:
+        #     total_arr.append(value)
+        # for value in returned_arr_left:
+        #     total_arr.append(value)
+        if len(returned_arr_left) > 0:
+            total_arr.append(returned_arr_left)
+        if len(returned_arr_right) > 0:
+            total_arr.append(returned_arr_right)
         # Base case / general return function= neither path has another skip
         return total_arr
 
@@ -285,6 +315,11 @@ class GenerateMoves:
         lc_bitboard = position.current_board[1]
 
         if position.to_move == 'C':
+
+            # Only for capital -> Make sure no overflow -> 0's don't automatically get cut off when go about 64 bits
+            if this_piece & int("1111111100000000000000000000000000000000000000000000000000000000", 2) > 0:
+                return 0, False, 0, False
+
             # Get Diagonal Bitboard (Left)
             left_bitboard = ((this_piece << 9) & ~self.h_file & ~cap_bitboard)  # including lc pieces
             # Get Diagonal Bitboard (Right)
@@ -310,11 +345,13 @@ class GenerateMoves:
             right_move = move_without_skip_right | lc_pieces_shifted_legal_right
             right_move_was_skip = lc_pieces_shifted_legal_right > 0
 
-            # Only for capital -> Make sure no overflow -> 0's don't automatically get cut off when go about 64 bits
-            if left_move > int("1000000000000000000000000000000000000000000000000000000000000000", 2):
+            # Check if went over (max can go over 2 rows past top)
+            if left_move & ((self.rank_8 << 8) | (self.rank_8 << 16)) > 0:
                 left_move = 0
-            if right_move > int("1000000000000000000000000000000000000000000000000000000000000000", 2):
+                left_move_was_skip = False
+            if right_move & ((self.rank_8 << 8) | (self.rank_8 << 16)) > 0:
                 right_move = 0
+                right_move_was_skip = False
 
             return left_move, left_move_was_skip, right_move, right_move_was_skip
 
@@ -539,6 +576,7 @@ class Minimax:
             if len(possible_moves) == 0:
                 return pos
 
+            # print(possible_moves)
             # Get all possible moves
             for move_arr in possible_moves:
                 # Get Position Copy Object (Child) (Including history)
@@ -554,8 +592,10 @@ class Minimax:
                     child_pos.to_move = "C"
                 else:  # child_pos.to_move == "C":
                     child_pos.to_move = "L"
+
                 # Add the move to moves to current
                 child_pos.add_move_to_current(move_arr)
+                # print(child_pos.moves_to_current)
                 # Recursive Call To Minimax
                 temp_position = self.minimax(child_pos, depth-1, alpha, beta)
                 # Check if this position is better
