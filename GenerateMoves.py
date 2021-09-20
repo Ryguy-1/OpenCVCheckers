@@ -44,6 +44,7 @@ def analyze_read_bord(string_board, casing):
     minimax = Minimax()
     result = minimax.minimax(start_pos, 10, Minimax.min, Minimax.max).moves_to_current
     print(f'Predicted 10 Moves Ahead: {result}')
+    print(f'Searched {minimax.nodes_searched} plausible nodes')
     # Return Next Best Move
     return result[0]
 
