@@ -35,11 +35,15 @@ def analyze_read_bord(string_board, casing):
     # Initialize Board StartPos
     start_pos = Position([cap_bitboard, lc_bitboard], casing)
     # print(GenerateMoves().get_moves_skipping(start_pos, int("0000000000000000000000000000000000000000010000000000000000000000", 2), []))
+
+
     # print(GenerateMoves().get_move_list_algebraic(start_pos))
+
+
     # New Minimax Object
     minimax = Minimax()
-    result = minimax.minimax(start_pos, 2, Minimax.min, Minimax.max).moves_to_current
-    print(result)
+    result = minimax.minimax(start_pos, 10, Minimax.min, Minimax.max).moves_to_current
+    print(f'Predicted 10 Moves Ahead: {result}')
     # Return Next Best Move
     return result[0]
 
@@ -111,7 +115,6 @@ class GenerateMoves:
                 if left_was_skip or right_was_skip:
                     # Looks like this [[move1, move2], [move1], [move1, move2, move3]]
                     trail_array = self.get_moves_skipping(position, capital_bitboards[bitboard_index], [])
-                    # print(trail_array)
                     trail_array = self.extract_array_format(trail_array)
                     # Use the largest -> rule of thumb assumption that's almost always true.
                     longest_skip = []
@@ -137,14 +140,7 @@ class GenerateMoves:
                         bitboard_move_list.append(from_string+to_string)
             # Mandate skips if available
             if len(skip_list) > 0:
-                # If is nested (has an extra dimension) pull out that extra dimension
-                bitboard_move_list = np.array(skip_list).squeeze().tolist()
-                if isinstance(bitboard_move_list, str):
-                    bitboard_move_list = [[bitboard_move_list]]
-                # If single string is compressed, uncompress it back to array
-                for index in range(len(bitboard_move_list)):
-                    if isinstance(bitboard_move_list[index], str):
-                        bitboard_move_list[index] = [bitboard_move_list[index]]
+                bitboard_move_list = self.extract_array_format(skip_list)
             else:
                 bitboard_move_list = self.extract_array_format(bitboard_move_list)
             return bitboard_move_list
@@ -189,15 +185,7 @@ class GenerateMoves:
                         bitboard_move_list.append(from_string+to_string)
             # Mandate skips if available
             if len(skip_list) > 0:
-                # If is nested (has an extra dimension) pull out that extra dimension
-                bitboard_move_list = np.array(skip_list).squeeze().tolist()
-                # If there is a single string, squeeze turns to string, so turn back to array
-                if isinstance(bitboard_move_list, str):
-                    bitboard_move_list = [[bitboard_move_list]]
-                # If single string is compressed, uncompress it back to array
-                for index in range(len(bitboard_move_list)):
-                    if isinstance(bitboard_move_list[index], str):
-                        bitboard_move_list[index] = [bitboard_move_list[index]]
+                bitboard_move_list = self.extract_array_format(skip_list)
             else:
                 bitboard_move_list = self.extract_array_format(bitboard_move_list)
             return bitboard_move_list
@@ -450,9 +438,9 @@ class Position:
 
         # Checks for game won and returns a value accordingly
         if total_cap == 0 or (self.move_generator.rank_1 & self.current_board[1] > 0):
-            return -100000000000
+            return -10000000
         if total_lc == 0 or (self.move_generator.rank_8 & self.current_board[0] > 0):
-            return 100000000000
+            return 10000000
 
         # Otherwise, return the point differential (cap = +, lc = -)
         return total_cap - total_lc
@@ -466,6 +454,7 @@ class Position:
     def make_move(self, algebraic_move):
 
         if algebraic_move == "" or len(algebraic_move) != 4:
+            # print("TRIED TO MAKE ILLEGAL MOVE")
             return
 
         # Strings of moves separated
@@ -565,7 +554,7 @@ class Minimax:
         self.nodes_searched += 1
 
         # Reached Leaf Node (Game is Over)
-        if depth == 0:
+        if depth == 0 or pos.get_evaluation() > 10000 or pos.get_evaluation() < -10000:
             return pos
 
         # If isMaximizingPlayer
@@ -575,9 +564,8 @@ class Minimax:
             best_position = None
             possible_moves = self.move_generator.get_move_list_algebraic(pos)
 
-            if len(possible_moves) == 0 or pos.get_evaluation() > 10000 or pos.get_evaluation() < -10000:
+            if len(possible_moves) == 0:
                 return pos
-            print(possible_moves)
             # print(possible_moves)
             # Get all possible moves
             for move_arr in possible_moves:
@@ -633,9 +621,11 @@ class Minimax:
             # Find possible moves
             possible_moves = self.move_generator.get_move_list_algebraic(pos)
 
-            print(f'Lower Case Possible Moves: {possible_moves}')
+            # print(possible_moves)
+
+            # print(f'Lower Case Possible Moves: {possible_moves}')
             # If possible moves are none, return position, leaf node
-            if len(possible_moves) == 0 or pos.get_evaluation() > 10000 or pos.get_evaluation() < -10000:
+            if len(possible_moves) == 0:
                 return pos
 
             # Get all possible moves
@@ -654,6 +644,8 @@ class Minimax:
                 else:  # child_pos.to_move == "L":
                     child_pos.to_move = "C"
                 # Add the move to moves to current
+
+                # print(f'Move arr{move_arr}')
                 child_pos.add_move_to_current(move_arr)
                 # Recursive Call To Minimax
                 temp_position = self.minimax(child_pos, depth - 1, alpha, beta)
