@@ -38,8 +38,10 @@ def analyze_read_bord(string_board, casing):
     # print(GenerateMoves().get_move_list_algebraic(start_pos))
     # New Minimax Object
     minimax = Minimax()
+    result = minimax.minimax(start_pos, 2, Minimax.min, Minimax.max).moves_to_current
+    print(result)
     # Return Next Best Move
-    return minimax.minimax(start_pos, 10, Minimax.min, Minimax.max).moves_to_current[0]
+    return result[0]
 
 
 # Purpose: Encapsulates Member Variables and Methods Needed to Generate a Move Sequence
@@ -573,9 +575,9 @@ class Minimax:
             best_position = None
             possible_moves = self.move_generator.get_move_list_algebraic(pos)
 
-            if len(possible_moves) == 0:
+            if len(possible_moves) == 0 or pos.get_evaluation() > 10000 or pos.get_evaluation() < -10000:
                 return pos
-
+            print(possible_moves)
             # print(possible_moves)
             # Get all possible moves
             for move_arr in possible_moves:
@@ -631,8 +633,9 @@ class Minimax:
             # Find possible moves
             possible_moves = self.move_generator.get_move_list_algebraic(pos)
 
+            print(f'Lower Case Possible Moves: {possible_moves}')
             # If possible moves are none, return position, leaf node
-            if len(possible_moves) == 0:
+            if len(possible_moves) == 0 or pos.get_evaluation() > 10000 or pos.get_evaluation() < -10000:
                 return pos
 
             # Get all possible moves
